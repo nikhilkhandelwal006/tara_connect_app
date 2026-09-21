@@ -1,0 +1,8 @@
+{
+  "appId": "in.taramed.app",
+  "appName": "Tara Connect",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "https"
+  }
+}

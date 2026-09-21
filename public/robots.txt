@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://online.taramed.in/sitemap.xml
