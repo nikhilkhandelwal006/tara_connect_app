@@ -24,6 +24,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Install NPM Dependencies
         run: npm install --legacy-peer-deps
 
@@ -34,9 +37,6 @@ jobs:
 
       - name: Sync Capacitor Android
         run: npx cap sync android
-
-      - name: Make Gradlew Executable
-        run: chmod +x android/gradlew
 
       - name: Build Debug APK
         run: |
