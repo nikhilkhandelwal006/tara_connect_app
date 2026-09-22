@@ -26,12 +26,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Android SDK Build Tools 34
+      - name: Install Android SDK Build Tools
         run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
-
-      - name: Accept All SDK Licenses
-        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" || true
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Install NPM Dependencies
@@ -45,6 +45,9 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      - name: Create local.properties with SDK path
+        run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
       - name: Grant Execute Permission to Gradlew
         run: chmod +x android/gradlew
 
@@ -53,8 +56,8 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon 2>&1
 
-      - name: List APK output
-        run: find android -name "*.apk" 2>/dev/null || echo "No APK found!"
+      - name: Find APK
+        run: find android -name "*.apk" 2>/dev/null || echo "APK not found"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
