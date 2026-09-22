@@ -4392,7 +4392,7 @@ const AdminRepresentatives = () => {
       </div>
 
       {/* Sub-tab Navigation */}
-      <div style={{ display: 'flex', gap: '15px', borderBottom: '1px solid var(--border)', marginBottom: '25px', paddingBottom: '2px' }}>
+      <div className="subtabs-bar">
         <button 
           onClick={() => setSubTab('reps')} 
           style={{

@@ -166,18 +166,18 @@ const downloadStyledExcel = (title, filename, headerRows, dataRows, totalRows, v
 
 const getNavItems = (user) => {
   const items = [
-    { path: '/representative', label: 'Dashboard', icon: <FiHome />, exact: true },
-    { path: '/representative/statement', label: 'S&S-D', icon: <FiFileText /> },
-    { path: '/representative/ss-summary', label: 'S&S Summary', icon: <FiList /> },
+    { path: '/representative', label: 'Dashboard', shortLabel: 'Home', icon: <FiHome />, exact: true },
+    { path: '/representative/statement', label: 'S&S-D Statement', shortLabel: 'S&S-D', icon: <FiFileText /> },
+    { path: '/representative/ss-summary', label: 'S&S Summary', shortLabel: 'Summary', icon: <FiList /> },
   ];
   if (user?.permissions?.canViewCustomerWise) {
-    items.push({ path: '/representative/customer-wise', label: 'Customer Wise', icon: <FiUsers /> });
+    items.push({ path: '/representative/customer-wise', label: 'Customer Wise', shortLabel: 'CW', icon: <FiUsers /> });
   }
   if (user?.permissions?.canViewPurchaseOrder) {
-    items.push({ path: '/representative/purchase-order', label: 'Purchase Order', icon: <FiShoppingCart /> });
+    items.push({ path: '/representative/purchase-order', label: 'Purchase Order', shortLabel: 'PO', icon: <FiShoppingCart /> });
   }
   if (user?.permissions?.canViewBranchStatement || user?.permissions?.canViewBranchCustomerWise) {
-    items.push({ path: '/representative/branch-data', label: 'Branch Data', icon: <FiLayers /> });
+    items.push({ path: '/representative/branch-data', label: 'Branch Data', shortLabel: 'Branch', icon: <FiLayers /> });
   }
   return items;
 };

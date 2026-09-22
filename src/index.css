@@ -31,6 +31,62 @@ html, body, #root {
   align-items: center;
 }
 
+/* Subtabs Bar (Horizontal Touch Scroll for Mobile) */
+.subtabs-bar, .subtab-container, .tabs-container, .cw-filters-container {
+  display: flex !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  white-space: nowrap !important;
+  border-bottom: 1px solid var(--border) !important;
+  margin-bottom: 20px !important;
+  padding-bottom: 6px !important;
+  scrollbar-width: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.subtabs-bar::-webkit-scrollbar,
+.subtab-container::-webkit-scrollbar,
+.tabs-container::-webkit-scrollbar,
+.cw-filters-container::-webkit-scrollbar {
+  display: none !important;
+}
+
+.subtabs-bar button,
+.subtab-container button,
+.tabs-container button {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+/* Premium Stat Cards & Responsive Numeric Formatting */
+.stat-card {
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  overflow: hidden !important;
+}
+
+.stat-card .stat-value {
+  font-size: clamp(18px, 4.5vw, 24px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  word-break: break-word !important;
+  line-height: 1.2 !important;
+}
+
+.stat-card .stat-label {
+  font-size: 12px !important;
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+  margin-top: 4px !important;
+}
+
 @media (max-width: 768px) {
   .page-header-actions, .mobile-action-group {
     width: 100% !important;

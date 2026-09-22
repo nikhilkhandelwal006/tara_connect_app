@@ -247,7 +247,7 @@ const DashboardLayout = ({ children, navItems }) => {
             className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
           >
             <span className="nav-icon">{item.icon}</span>
-            <span>{item.label.split(' ')[0]}</span>
+            <span style={{ fontSize: '11px', fontWeight: 600 }}>{item.shortLabel || item.label}</span>
             {item.badge > 0 && <span className="nav-badge">{item.badge > 99 ? '99+' : item.badge}</span>}
           </NavLink>
         ))}

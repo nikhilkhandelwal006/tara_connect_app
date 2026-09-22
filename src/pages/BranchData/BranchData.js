@@ -427,7 +427,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border)', marginBottom: '20px' }}>
+      <div className="subtabs-bar">
         {canSs && (
           <button
             onClick={() => setActiveTab('ss')}
