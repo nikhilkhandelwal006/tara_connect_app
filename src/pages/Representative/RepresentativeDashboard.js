@@ -2957,9 +2957,9 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
         mfacCodeFilter: selectedMfac,
         isDownload: 'true'
       });
-      const allData = res.data.data || [];
+      const allData = (res.data.data || []).filter(item => (Number(item.excessQty) || 0) > 0);
       if (allData.length === 0) {
-        toast.warning('No data to export');
+        toast.warning('No excess/non-moving stock data to export');
         return;
       }
       const today = new Date();
@@ -3103,7 +3103,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((item, idx) => {
+                  {data.filter(item => (Number(item.excessQty) || 0) > 0).map((item, idx) => {
                     const totQ = (Number(item.opBalance) || 0) + (Number(item.purQty) || 0);
                     return (
                       <tr key={item._id || idx}>
