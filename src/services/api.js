@@ -171,6 +171,7 @@ export const representativesAPI = {
   removeCompany: (id, mfacCode) => api.patch(`/representatives/${id}/remove-company`, { mfacCode }),
   getCWFieldPermissions: (mfacCode) => api.get('/representatives/customer-wise/field-permissions', { params: { mfacCode } }),
   updateCWFieldPermissions: (mfacCode, fields) => api.patch('/representatives/customer-wise/field-permissions', { mfacCode, fields }),
+  getNonMovingStock: (params) => api.get('/representatives/non-moving-stock', { params }),
   getStats: () => api.get('/representatives/stats'),
   toggleBranchSsPermission: (id) => api.patch(`/representatives/toggle-branch-ss-permission/${id}`),
   toggleBranchCwPermission: (id) => api.patch(`/representatives/toggle-branch-cw-permission/${id}`),

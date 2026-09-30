@@ -169,6 +169,7 @@ const getNavItems = (user) => {
     { path: '/representative', label: 'Dashboard', shortLabel: 'Home', icon: <FiHome />, exact: true },
     { path: '/representative/statement', label: 'S&S-D Statement', shortLabel: 'S&S-D', icon: <FiFileText /> },
     { path: '/representative/ss-summary', label: 'S&S Summary', shortLabel: 'Summary', icon: <FiList /> },
+    { path: '/representative/non-moving', label: 'Non-Moving Stock', shortLabel: 'Non-Moving', icon: <FiPackage /> },
   ];
   if (user?.permissions?.canViewCustomerWise) {
     items.push({ path: '/representative/customer-wise', label: 'Customer Wise', shortLabel: 'CW', icon: <FiUsers /> });
@@ -2896,6 +2897,251 @@ const RepresentativePurchaseOrder = () => {
   );
 };
 
+const NonMovingStockReport = ({ isAdmin = false }) => {
+  const [data, setData] = useState([]);
+  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [selectedMfac, setSelectedMfac] = useState('');
+  const [manufacturers, setManufacturers] = useState([]);
+  const [periodDisplay, setPeriodDisplay] = useState('');
+  const [reportMonth, setReportMonth] = useState('');
+  const [reportYear, setReportYear] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(search);
+    }, 450);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  const fetchData = async (p = 1) => {
+    try {
+      setLoading(true);
+      const res = await representativesAPI.getNonMovingStock({
+        search: searchQuery,
+        page: p,
+        limit: 50,
+        mfacCodeFilter: selectedMfac
+      });
+      setData(res.data.data || []);
+      setPage(res.data.page || 1);
+      setTotalPages(res.data.totalPages || 1);
+      setPeriodDisplay(res.data.periodDisplay || '');
+      setReportMonth(res.data.reportMonth || '');
+      setReportYear(res.data.reportYear || '');
+      if (res.data.manufacturers) {
+        setManufacturers(res.data.manufacturers);
+      }
+    } catch (error) {
+      console.error('Fetch non-moving error:', error);
+      toast.error(error.response?.data?.message || 'Failed to fetch non-moving stock');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(1);
+  }, [searchQuery, selectedMfac]); // eslint-disable-line
+
+  const handleDownloadExcel = async () => {
+    try {
+      setDownloading(true);
+      toast.info('Exporting Non-Moving / Excess Stock...');
+      const res = await representativesAPI.getNonMovingStock({
+        search: searchQuery,
+        mfacCodeFilter: selectedMfac,
+        isDownload: 'true'
+      });
+      const allData = res.data.data || [];
+      if (allData.length === 0) {
+        toast.warning('No data to export');
+        return;
+      }
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const mfacLabel = manufacturers.find(m => m.code === selectedMfac)?.name || 'All Companies';
+
+      const headerRows = [
+        [' Tara Medicos Pvt Ltd, Jaipur'],
+        [` Date: ${dateStr}`],
+        [` Non-Moving / Excess Stock Report (Period: ${periodDisplay})`],
+        [` Company: ${mfacLabel}`],
+        [],
+        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty', 'Total Sale Qty (3 Mon)', 'Ending Bal. Qty', 'Excess / Non-Moving Qty', 'Company']
+      ];
+
+      const dataRows = allData.map(item => [
+        item.itemName || '',
+        item.pack || '',
+        item.opBalance || 0,
+        item.purQty || 0,
+        item.saleQty || 0,
+        item.balQty || 0,
+        item.excessQty > 0 ? item.excessQty : '-',
+        item.mfacName || ''
+      ]);
+
+      const totalOp = allData.reduce((s, i) => s + (i.opBalance || 0), 0);
+      const totalPur = allData.reduce((s, i) => s + (i.purQty || 0), 0);
+      const totalSale = allData.reduce((s, i) => s + (i.saleQty || 0), 0);
+      const totalBal = allData.reduce((s, i) => s + (i.balQty || 0), 0);
+      const totalExcess = allData.reduce((s, i) => s + (i.excessQty || 0), 0);
+
+      const totalRow = ['Total', '', totalOp, totalPur, totalSale, totalBal, totalExcess, ''];
+
+      const wb = XLSX.utils.book_new();
+      const wsData = [...headerRows, ...dataRows, [], totalRow];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      ws['!cols'] = [
+        { wch: 32 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 22 }, { wch: 16 }, { wch: 24 }, { wch: 24 }
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Non-Moving Stock');
+      XLSX.writeFile(wb, `NonMoving_Stock_${reportMonth}_${reportYear}.xlsx`);
+      toast.success('Non-Moving Stock Excel exported!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to export Non-Moving Stock Excel');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="animate-slide-up">
+      <div className="page-header page-header-flex">
+        <div>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            Non-Moving / Excess Stock 📦
+          </h1>
+          <p style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            Items with excess ending balance vs 3-month total sales
+            {periodDisplay && (
+              <span style={{ padding: '3px 12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', borderRadius: '12px', fontSize: '13px', fontWeight: 700, border: '1px solid rgba(245,158,11,0.3)' }}>
+                Period: {periodDisplay} (3 Months Cycle)
+              </span>
+            )}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleDownloadExcel}
+            disabled={downloading || loading || data.length === 0}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <FiDownload /> {downloading ? 'Exporting...' : 'Export to Excel'}
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          <div style={{ position: 'relative', flex: '1 1 250px' }}>
+            <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              className="form-input"
+              style={{ paddingLeft: '36px', width: '100%' }}
+              placeholder="Search non-moving item..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)' }}>
+                <FiX />
+              </button>
+            )}
+          </div>
+          {manufacturers.length > 0 && (
+            <select
+              className="form-select"
+              value={selectedMfac}
+              onChange={(e) => setSelectedMfac(e.target.value)}
+              style={{ flex: '0 1 220px' }}
+            >
+              <option value="">All Companies</option>
+              {manufacturers.map(m => (
+                <option key={m.code} value={m.code}>{m.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="loading-container" style={{ minHeight: '200px' }}><div className="spinner"></div></div>
+        ) : data.length === 0 ? (
+          <div className="empty-state" style={{ minHeight: '200px' }}>
+            <p>No non-moving stock records found for the current period.</p>
+          </div>
+        ) : (
+          <>
+            <div className="table-container" style={{ overflowX: 'auto' }}>
+              <table className="table scrollable" style={{ width: '100%', minWidth: '950px' }}>
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Pack</th>
+                    <th style={{ textAlign: 'right' }}>Op. Qty</th>
+                    <th style={{ textAlign: 'right' }}>Pur Qty (3 Mon)</th>
+                    <th style={{ textAlign: 'right' }}>Total Sale Qty (3 Mon)</th>
+                    <th style={{ textAlign: 'right' }}>Bal. Qty</th>
+                    <th style={{ textAlign: 'right', color: '#f59e0b' }}>Excess / Non-Moving Qty</th>
+                    {isAdmin && <th>Company</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((item, idx) => (
+                    <tr key={item._id || idx}>
+                      <td style={{ color: 'var(--text-white)', fontWeight: 500 }}>{item.itemName || '—'}</td>
+                      <td>{item.pack || '—'}</td>
+                      <td style={{ textAlign: 'right' }}>{item.opBalance || 0}</td>
+                      <td style={{ textAlign: 'right' }}>{item.purQty || 0}</td>
+                      <td style={{ textAlign: 'right' }}>{item.saleQty || 0}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.balQty || 0}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {item.excessQty > 0 ? (
+                          <span style={{ padding: '3px 10px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '6px', fontWeight: 700, fontSize: '12px' }}>
+                            {item.excessQty}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
+                        )}
+                      </td>
+                      {isAdmin && <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.mfacName || '—'}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '24px' }}>
+                <button className="btn btn-outline btn-sm" onClick={() => fetchData(page - 1)} disabled={page <= 1}>
+                  <FiChevronLeft /> Prev
+                </button>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Page {page} of {totalPages}
+                </span>
+                <button className="btn btn-outline btn-sm" onClick={() => fetchData(page + 1)} disabled={page >= totalPages}>
+                  Next <FiChevronRight />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const RepresentativeDashboard = () => {
   const { user } = useAuth();
   const navItems = getNavItems(user);
@@ -2905,6 +3151,7 @@ const RepresentativeDashboard = () => {
         <Route index element={<RepresentativeOverview />} />
         <Route path="statement" element={<RepresentativeStatement />} />
         <Route path="ss-summary" element={<SsSummary />} />
+        <Route path="non-moving" element={<NonMovingStockReport isAdmin={false} />} />
         {user?.permissions?.canViewCustomerWise && (
           <Route path="customer-wise" element={<CustomerWiseReport />} />
         )}

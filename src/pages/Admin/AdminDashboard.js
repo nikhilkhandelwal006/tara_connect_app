@@ -5148,7 +5148,6 @@ const AdminRepresentatives = () => {
                         <th style={{ textAlign: 'right' }}>Total Qty</th>
                         <th style={{ textAlign: 'right' }}>Sale Qty</th>
                         <th style={{ textAlign: 'right' }}>Bal. Qty</th>
-                        <th style={{ textAlign: 'right', color: '#f59e0b' }}>Excess / Non-Moving Qty</th>
                         <th>Company / Division</th>
                       </tr>
                     </thead>
@@ -5167,24 +5166,6 @@ const AdminRepresentatives = () => {
                             <td style={{ textAlign: 'right', fontWeight: 600 }}>{(item.opBalance || 0) + purQ}</td>
                             <td style={{ textAlign: 'right' }}>{saleQ}</td>
                             <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.balQty || 0}</td>
-                            <td style={{ textAlign: 'right' }}>
-                              {excessQ > 0 ? (
-                                <span style={{ 
-                                  display: 'inline-block', 
-                                  padding: '2px 8px', 
-                                  background: 'rgba(245, 158, 11, 0.15)', 
-                                  color: '#f59e0b', 
-                                  border: '1px solid rgba(245, 158, 11, 0.3)', 
-                                  borderRadius: '6px', 
-                                  fontWeight: 700, 
-                                  fontSize: '12px' 
-                                }}>
-                                  {excessQ}
-                                </span>
-                              ) : (
-                                <span style={{ color: 'var(--text-muted)' }}>—</span>
-                              )}
-                            </td>
                             <td style={{ fontSize: '12px' }}>
                               <div style={{ color: 'var(--text-white)' }}>{item.mfacName || '—'}</div>
                               <div style={{ color: 'var(--text-muted)', fontSize: '10px' }}>Code: {item.mfacCode}</div>
@@ -5201,7 +5182,6 @@ const AdminRepresentatives = () => {
                         <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.opBalance) || 0) + (Number(i.purQty) || 0) + (Number(i.purSchQty) || 0), 0)}</td>
                         <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.saleQty) || 0) + (Number(i.freeQty) || 0) + (Number(i.brQty) || 0) - (Number(i.crQty) || 0) + (Number(i.adjQty) || 0), 0)}</td>
                         <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.balQty) || 0), 0)}</td>
-                        <td style={{ textAlign: 'right', color: '#f59e0b' }}>{summaryData.reduce((s, i) => s + calcAdminExcessQty(i), 0)}</td>
                         <td></td>
                       </tr>
                       <tr style={{ fontWeight: 600, borderTop: '1px solid var(--border)', fontSize: '12px' }}>
