@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import api, { usersAPI, ordersAPI, medicinesAPI, outstandingAPI, representativesAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import BranchData from '../BranchData/BranchData';
+import { NonMovingStockReport } from '../Representative/RepresentativeDashboard';
 import { FiHome, FiUsers, FiPackage, FiShoppingCart, FiSearch, FiTrash2, FiToggleLeft, FiToggleRight, FiPlus, FiMessageSquare, FiDownload, FiX, FiList, FiShield, FiDollarSign, FiUploadCloud, FiChevronLeft, FiChevronRight, FiChevronDown, FiClock, FiSettings, FiSlash, FiCheckCircle, FiArchive, FiLayers, FiFileText } from 'react-icons/fi';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
@@ -4442,6 +4443,25 @@ const AdminRepresentatives = () => {
           S&S Summary 📊
         </button>
         <button 
+          onClick={() => setSubTab('nonmoving')} 
+          style={{
+            background: 'none',
+            border: 'none',
+            borderBottom: subTab === 'nonmoving' ? '2px solid var(--accent)' : '2px solid transparent',
+            color: subTab === 'nonmoving' ? 'var(--text-white)' : 'var(--text-muted)',
+            padding: '8px 16px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '14px',
+            transition: 'all 0.2s',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          Non-Moving Stock 📦
+        </button>
+        <button 
           onClick={() => setSubTab('customerwise')} 
           style={{
             background: 'none',
@@ -5227,6 +5247,10 @@ const AdminRepresentatives = () => {
               </>
             )}
           </>
+        )}
+
+        {subTab === 'nonmoving' && (
+          <NonMovingStockReport isAdmin={true} />
         )}
 
         {subTab === 'customerwise' && (
