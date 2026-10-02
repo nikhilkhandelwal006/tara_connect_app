@@ -278,9 +278,9 @@ const AdminOverview = () => {
       </div>
 
       {/* Stats Cards Grid */}
-      <div style={{ 
+      <div className="admin-stats-grid" style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(3, 1fr)', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
         gap: '20px', 
         marginBottom: '28px' 
       }}>
@@ -291,7 +291,6 @@ const AdminOverview = () => {
           borderRadius: '14px',
           padding: '18px 22px',
           boxShadow: 'var(--shadow-sm)',
-          gridColumn: 'span 3',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -306,7 +305,7 @@ const AdminOverview = () => {
             </div>
             <div style={{ fontSize: '32px' }}>👥</div>
           </div>
-          <div style={{ display: 'flex', gap: '15px', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '10px' }}>
+          <div className="admin-stats-breakdown" style={{ display: 'flex', gap: '15px', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '10px' }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Active</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -325,7 +324,7 @@ const AdminOverview = () => {
                 </button>
               </div>
             </div>
-            <div style={{ width: '1px', background: 'var(--border-light)' }} />
+            <div className="admin-stats-breakdown-divider" style={{ width: '1px', background: 'var(--border-light)' }} />
             <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Inactive</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -344,7 +343,7 @@ const AdminOverview = () => {
                 </button>
               </div>
             </div>
-            <div style={{ width: '1px', background: 'var(--border-light)' }} />
+            <div className="admin-stats-breakdown-divider" style={{ width: '1px', background: 'var(--border-light)' }} />
             <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Blocked</span>
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#f59e0b' }}>{stats.blockedBuyers || 0}</span>
@@ -359,7 +358,6 @@ const AdminOverview = () => {
           borderRadius: '14px',
           padding: '18px 22px',
           boxShadow: 'var(--shadow-sm)',
-          gridColumn: 'span 3',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -374,12 +372,12 @@ const AdminOverview = () => {
             </div>
             <div style={{ fontSize: '32px' }}>🛡️</div>
           </div>
-          <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '10px' }}>
+          <div className="admin-stats-breakdown" style={{ display: 'flex', gap: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '10px' }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Registered &amp; Active</span>
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#10b981' }}>{repStats.activeReps || 0}</span>
             </div>
-            <div style={{ width: '1px', background: 'var(--border-light)' }} />
+            <div className="admin-stats-breakdown-divider" style={{ width: '1px', background: 'var(--border-light)' }} />
             <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Pending Registration</span>
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#fbbf24' }}>
@@ -396,7 +394,6 @@ const AdminOverview = () => {
           borderRadius: '14px',
           padding: '18px 22px',
           boxShadow: 'var(--shadow-sm)',
-          gridColumn: 'span 3',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -420,12 +417,12 @@ const AdminOverview = () => {
             </div>
             <div style={{ fontSize: '32px' }}>📋</div>
           </div>
-          <div style={{ display: 'flex', gap: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '10px' }}>
+          <div className="admin-stats-breakdown" style={{ display: 'flex', gap: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '10px' }}>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Active Items</span>
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#10b981' }}>{stats.activeMedicines || 0}</span>
             </div>
-            <div style={{ width: '1px', background: 'var(--border-light)' }} />
+            <div className="admin-stats-breakdown-divider" style={{ width: '1px', background: 'var(--border-light)' }} />
             <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Inactive Items</span>
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#ef4444' }}>{stats.inactiveMedicines || 0}</span>
@@ -3036,11 +3033,10 @@ const AdminRepresentatives = () => {
         [`Stock and Sales Summary: ${month || ''} ${year || ''}`],
         [mfacLabel ? `Company: ${mfacLabel}` : ''],
         [],
-        ['Item Name', 'Pack', 'Op Qty', 'Pur Qty', 'Total Qty', 'Sale Qty', 'Bal Qty', 'Excess / Non-Moving Qty', 'Company / Manufacturer']
+        ['Item Name', 'Pack', 'Op Qty', 'Pur Qty', 'Total Qty', 'Sale Qty', 'Bal Qty', 'Company / Manufacturer']
       ];
 
       const dataRows = allData.map(item => {
-        const exQ = calcAdminExcessQty(item);
         return [
           item.itemName || '',
           item.pack || '',
@@ -3049,7 +3045,6 @@ const AdminRepresentatives = () => {
           Number(item.opBalance || 0) + Number(item.purQty || 0) + Number(item.purSchQty || 0),
           Number(item.saleQty || 0) + Number(item.freeQty || 0) + Number(item.brQty || 0) - Number(item.crQty || 0) + Number(item.adjQty || 0),
           Number(item.balQty) || 0,
-          exQ > 0 ? exQ : 0,
           item.mfacName || item.mfacCode || ''
         ];
       });
@@ -3063,10 +3058,9 @@ const AdminRepresentatives = () => {
       const totalSaleValue = allData.reduce((sum, item) => sum + (Number(item.saleValue) || 0) + (Number(item.brValue) || 0) - (Number(item.crValue) || 0) + (Number(item.adjValue) || 0), 0);
       const totalBalQty = allData.reduce((sum, item) => sum + (Number(item.balQty) || 0), 0);
       const totalBalValue = allData.reduce((sum, item) => sum + (Number(item.balValue) || 0), 0);
-      const totalExcessQty = allData.reduce((sum, item) => sum + calcAdminExcessQty(item), 0);
 
-      const totalRow = ['Total', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalQty, totalExcessQty, ''];
-      const valueRow = ['(values)', '', totalOpValue.toFixed(2), totalPurValue.toFixed(2), (totalOpValue + totalPurValue).toFixed(2), totalSaleValue.toFixed(2), totalBalValue.toFixed(2), '', ''];
+      const totalRow = ['Total', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalQty, ''];
+      const valueRow = ['(values)', '', totalOpValue.toFixed(2), totalPurValue.toFixed(2), (totalOpValue + totalPurValue).toFixed(2), totalSaleValue.toFixed(2), totalBalValue.toFixed(2), ''];
 
       const allRows = [...headerRows, ...dataRows, totalRow, valueRow];
       const ws = XLSX.utils.aoa_to_sheet(allRows);
@@ -3129,16 +3123,14 @@ const AdminRepresentatives = () => {
       const totalSaleQty = allData.reduce((s, i) => s + (i.saleQty || 0) + (i.freeQty || 0) + (i.brQty || 0) - (i.crQty || 0) + (i.adjQty || 0), 0);
       const totalSaleValue = allData.reduce((s, i) => s + (i.saleValue || 0) + (i.brValue || 0) - (i.crValue || 0) + (i.adjValue || 0), 0);
       const totalBalQty = allData.reduce((s, i) => s + (i.balQty || 0), 0);
-      const totalExcessQty = allData.reduce((s, i) => s + calcAdminExcessQty(i), 0);
 
       autoTable(doc, {
         startY: 37,
-        head: [['Item Name', 'Pack', 'Op Qty', 'Pur Qty', 'Total Qty', 'Sale Qty', 'Bal. Qty', 'Excess Qty']],
+        head: [['Item Name', 'Pack', 'Op Qty', 'Pur Qty', 'Total Qty', 'Sale Qty', 'Bal. Qty']],
         body: [
           ...allData.map(item => {
             const purQ = (item.purQty || 0) + (item.purSchQty || 0);
             const saleQ = (item.saleQty || 0) + (item.freeQty || 0) + (item.brQty || 0) - (item.crQty || 0) + (item.adjQty || 0);
-            const exQ = calcAdminExcessQty(item);
             return [
               item.itemName || '',
               item.pack || '',
@@ -3146,12 +3138,11 @@ const AdminRepresentatives = () => {
               purQ,
               (item.opBalance || 0) + purQ,
               saleQ,
-              item.balQty || 0,
-              exQ > 0 ? exQ : '-'
+              item.balQty || 0
             ];
           }),
-          ['Total (Qty)', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalQty, totalExcessQty],
-          ['Total (Val)', '', totalOpValue.toFixed(2), totalPurValue.toFixed(2), (totalOpValue + totalPurValue).toFixed(2), totalSaleValue.toFixed(2), allData.reduce((s,i)=>s+(i.balValue||0),0).toFixed(2), '']
+          ['Total (Qty)', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalQty],
+          ['Total (Val)', '', totalOpValue.toFixed(2), totalPurValue.toFixed(2), (totalOpValue + totalPurValue).toFixed(2), totalSaleValue.toFixed(2), allData.reduce((s,i)=>s+(i.balValue||0),0).toFixed(2)]
         ],
         styles: { fontSize: 8.5, cellPadding: 2.5, valign: 'middle' },
         margin: { top: 35, bottom: 20, left: 14, right: 14 },
@@ -5175,7 +5166,6 @@ const AdminRepresentatives = () => {
                       {summaryData.map((item, idx) => {
                         const purQ = (Number(item.purQty) || 0) + (Number(item.purSchQty) || 0);
                         const saleQ = (Number(item.saleQty) || 0) + (Number(item.freeQty) || 0) + (Number(item.brQty) || 0) - (Number(item.crQty) || 0) + (Number(item.adjQty) || 0);
-                        const excessQ = calcAdminExcessQty(item);
                         return (
                           <tr key={item._id || idx}>
                             <td style={{ color: 'var(--accent)', fontWeight: 600 }}>{item.itemCode || '—'}</td>

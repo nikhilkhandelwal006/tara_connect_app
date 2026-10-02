@@ -2057,12 +2057,11 @@ const SsSummary = () => {
         [reportPeriodStr],
         [companyName ? `Company: ${companyName}` : ''],
         [],
-        ['Item Name', 'Pack', 'Op Qty', 'Pur Qty ', 'Total Qty', 'Sale Qty', 'Bal Qty', 'Excess / Non-Moving Qty']
+        ['Item Name', 'Pack', 'Op Qty', 'Pur Qty ', 'Total Qty', 'Sale Qty', 'Bal Qty']
       ];
 
       // Per-item calculated values - ensure numeric values are numbers
       const dataRows = allData.map(item => {
-        const exQ = calcExcessQty(item);
         return [
           item.itemName || '',
           item.pack || '',
@@ -2071,7 +2070,6 @@ const SsSummary = () => {
           Number(item.opBalance || 0) + Number(item.purQty || 0) + Number(item.purSchQty || 0),
           Number(item.saleQty || 0) + Number(item.freeQty || 0) + Number(item.brQty || 0) - Number(item.crQty || 0) + Number(item.adjQty || 0),
           Number(item.balQty) || 0,
-          exQ > 0 ? exQ : 0
         ];
       });
 
@@ -2084,7 +2082,6 @@ const SsSummary = () => {
       const totalSaleValue = allData.reduce((sum, item) => sum + (Number(item.saleValue) || 0) + (Number(item.brValue) || 0) - (Number(item.crValue) || 0) + (Number(item.adjValue) || 0), 0);
       const totalBalaQty = allData.reduce((sum, item) => sum + (Number(item.balQty) || 0), 0);
       const totalBalValue = allData.reduce((sum, item) => sum + (Number(item.balValue) || 0), 0);
-      const totalExcessQty = allData.reduce((sum, item) => sum + calcExcessQty(item), 0);
 
       // Helper: format summary value columns to 2 decimal places; 0 shows as 0
       const formatSummaryVal = (val) => {
@@ -2094,7 +2091,7 @@ const SsSummary = () => {
       };
 
       // Qty totals row
-      const totalRow = ['Total', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalaQty, totalExcessQty];
+      const totalRow = ['Total', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalaQty];
       // Value totals row (shown below qty totals) - formatted to 2 decimal places
       const valueRow = ['(values)', '', formatSummaryVal(totalOpValue), formatSummaryVal(totalPurValue), formatSummaryVal(totalOpValue + totalPurValue), formatSummaryVal(totalSaleValue), formatSummaryVal(totalBalValue), ''];
 
@@ -2187,29 +2184,13 @@ const SsSummary = () => {
       const totalSaleValue = allData.reduce((s, i) => s + (i.saleValue || 0) + (i.brValue || 0) - (i.crValue || 0) + (i.adjValue || 0), 0);
       const totalBalQty = allData.reduce((s, i) => s + (i.balQty || 0), 0);
 
-      const totalExcessQty = allData.reduce((s, i) => {
-        const currSaleQ = (Number(i.saleQty) || 0) + (Number(i.freeQty) || 0) + (Number(i.brQty) || 0) - (Number(i.crQty) || 0) + (Number(i.adjQty) || 0);
-        const rate = Number(i.saleRate) || 0;
-        const pm1Q = rate > 0 ? Math.round((Number(i.preMon1SaleValue) || 0) / rate) : 0;
-        const pm2Q = rate > 0 ? Math.round((Number(i.preMon2SaleValue) || 0) / rate) : 0;
-        const total3M = currSaleQ + pm1Q + pm2Q;
-        const diff = (Number(i.balQty) || 0) - total3M;
-        return s + (diff > 0 ? diff : 0);
-      }, 0);
-
       autoTable(doc, {
         startY: 37,
-        head: [['Item Name', 'Pack', 'Op Qty', 'Pur Qty', 'Total Qty', 'Sale Qty', 'Bal. Qty', 'Excess Qty']],
+        head: [['Item Name', 'Pack', 'Op Qty', 'Pur Qty', 'Total Qty', 'Sale Qty', 'Bal. Qty']],
         body: [
           ...allData.map(item => {
             const purQ = (item.purQty || 0) + (item.purSchQty || 0);
             const saleQ = (item.saleQty || 0) + (item.freeQty || 0) + (item.brQty || 0) - (item.crQty || 0) + (item.adjQty || 0);
-            const rate = Number(item.saleRate) || 0;
-            const pm1Q = rate > 0 ? Math.round((Number(item.preMon1SaleValue) || 0) / rate) : 0;
-            const pm2Q = rate > 0 ? Math.round((Number(item.preMon2SaleValue) || 0) / rate) : 0;
-            const total3M = saleQ + pm1Q + pm2Q;
-            const diff = (Number(item.balQty) || 0) - total3M;
-            const exQ = diff > 0 ? diff : 0;
             return [
               item.itemName || '',
               item.pack || '',
@@ -2218,10 +2199,9 @@ const SsSummary = () => {
               (item.opBalance || 0) + purQ,
               saleQ,
               item.balQty || 0,
-              exQ > 0 ? exQ : '-'
             ];
           }),
-          ['Total (Qty)', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalQty, totalExcessQty],
+          ['Total (Qty)', '', totalOpQty, totalPurQty, totalTotalQty, totalSaleQty, totalBalQty],
           ['Total (Val)', '', totalOpValue.toFixed(2), totalPurValue.toFixed(2), (totalOpValue + totalPurValue).toFixed(2), totalSaleValue.toFixed(2), allData.reduce((s,i)=>s+(i.balValue||0),0).toFixed(2), '']
         ],
         styles: { fontSize: 8.5, cellPadding: 2.5, valign: 'middle' },
@@ -2310,7 +2290,6 @@ const SsSummary = () => {
   const pageSaleValue = statement.reduce((sum, item) => sum + (item.saleValue || 0) + (item.brValue || 0) - (item.crValue || 0) + (item.adjValue || 0), 0);
   const pageBalaQty = statement.reduce((sum, item) => sum + (item.balQty || 0), 0);
   const pageClosingValue = statement.reduce((sum, item) => sum + (item.balValue || 0), 0);
-  const pageExcessQty = statement.reduce((sum, item) => sum + calcExcessQty(item), 0);
 
   return (
     <div className="animate-slide-up">
@@ -2432,14 +2411,12 @@ const SsSummary = () => {
                     <th style={{ textAlign: 'right' }}>Total Qty</th>
                     <th style={{ textAlign: 'right' }}>Sale Qty</th>
                     <th style={{ textAlign: 'right' }}>Bal. Qty</th>
-                    <th style={{ textAlign: 'right', color: '#f59e0b' }}>Excess / Non-Moving Qty</th>
                   </tr>
                 </thead>
                 <tbody>
                   {statement.map((item, idx) => {
                     const purQ = (item.purQty || 0) + (item.purSchQty || 0);
                     const saleQ = (item.saleQty || 0) + (item.freeQty || 0) + (item.brQty || 0) - (item.crQty || 0) + (item.adjQty || 0);
-                    const excessQ = calcExcessQty(item);
                     return (
                       <tr key={item._id || idx}>
                         <td style={{ color: 'var(--text-white)', fontWeight: 500 }}>{item.itemName || '—'}</td>
@@ -2449,24 +2426,6 @@ const SsSummary = () => {
                         <td style={{ textAlign: 'right', fontWeight: 600 }}>{(item.opBalance || 0) + purQ}</td>
                         <td style={{ textAlign: 'right' }}>{saleQ}</td>
                         <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.balQty || 0}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          {excessQ > 0 ? (
-                            <span style={{ 
-                              display: 'inline-block', 
-                              padding: '2px 8px', 
-                              background: 'rgba(245, 158, 11, 0.15)', 
-                              color: '#f59e0b', 
-                              border: '1px solid rgba(245, 158, 11, 0.3)', 
-                              borderRadius: '6px', 
-                              fontWeight: 700, 
-                              fontSize: '12px' 
-                            }}>
-                              {excessQ}
-                            </span>
-                          ) : (
-                            <span style={{ color: 'var(--text-muted)' }}>—</span>
-                          )}
-                        </td>
                       </tr>
                     );
                   })}
@@ -2478,7 +2437,6 @@ const SsSummary = () => {
                     <td style={{ textAlign: 'right' }}>{pageTotalQty}</td>
                     <td style={{ textAlign: 'right' }}>{pageSaleQty}</td>
                     <td style={{ textAlign: 'right' }}>{pageBalaQty}</td>
-                    <td style={{ textAlign: 'right', color: '#f59e0b' }}>{pageExcessQty > 0 ? pageExcessQty : 0}</td>
                   </tr>
                   <tr style={{ fontWeight: 600, borderTop: '1px solid var(--border)', fontSize: '12px' }}>
                     <td style={{ color: 'var(--text-muted)' }}>Total (Val)</td>
@@ -2488,7 +2446,6 @@ const SsSummary = () => {
                     <td style={{ textAlign: 'right', color: 'var(--text-white)', fontWeight: 700 }}>{(pageOpValue + pagePurValue).toFixed(2)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{pageSaleValue.toFixed(2)}</td>
                     <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{pageClosingValue.toFixed(2)}</td>
-                    <td></td>
                   </tr>
                 </tbody>
               </table>
@@ -2972,7 +2929,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
         [` Non-Moving / Excess Stock Report (Period: ${periodDisplay})`],
         [` Company: ${mfacLabel}`],
         [],
-        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Excess / Non-Moving Qty', 'Company']
+        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Company']
       ];
 
       const dataRows = allData.map(item => {
@@ -3098,7 +3055,6 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                     <th style={{ textAlign: 'right', color: 'var(--accent)' }}>Total Qty (Op + Pur)</th>
                     <th style={{ textAlign: 'right' }}>Total Sale Qty (3 Mon)</th>
                     <th style={{ textAlign: 'right', fontWeight: 700 }}>Bal. Qty (Total - Sale)</th>
-                    <th style={{ textAlign: 'right', color: '#f59e0b' }}>Excess / Non-Moving Qty</th>
                     {isAdmin && <th>Company</th>}
                   </tr>
                 </thead>

@@ -32,7 +32,7 @@ html, body, #root {
 }
 
 /* Subtabs Bar (Horizontal Touch Scroll for Mobile) */
-.subtabs-bar, .subtab-container, .tabs-container, .cw-filters-container {
+.subtabs-bar, .subtab-container, .tabs-container {
   display: flex !important;
   gap: 8px !important;
   overflow-x: auto !important;
@@ -48,8 +48,7 @@ html, body, #root {
 
 .subtabs-bar::-webkit-scrollbar,
 .subtab-container::-webkit-scrollbar,
-.tabs-container::-webkit-scrollbar,
-.cw-filters-container::-webkit-scrollbar {
+.tabs-container::-webkit-scrollbar {
   display: none !important;
 }
 
@@ -110,6 +109,42 @@ html, body, #root {
   }
   .cw-mobile-cards, .ss-mobile-cards {
     display: block !important;
+  }
+
+  /* Admin Stats Grid Mobile Responsiveness */
+  .admin-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+  .admin-stats-grid .stat-card {
+    grid-column: span 1 !important;
+    padding: 16px !important;
+  }
+  .admin-stats-breakdown {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .admin-stats-breakdown-divider {
+    display: none !important;
+  }
+
+  /* Customer Wise (CW) Mobile Filter Bar Fix */
+  .cw-filters-container {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+  .cw-filter-group {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+  .cw-filter-item {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
   }
 }
 
