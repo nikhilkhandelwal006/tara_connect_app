@@ -345,13 +345,13 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
 
       const today = new Date();
       const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const companyName = ssSelectedMfac ? (ssManufacturers.find(m => m.code === ssSelectedMfac)?.name || ssSelectedMfac) : '';
+      const companyName = ssSelectedMfac ? (ssManufacturers.find(m => m.code === ssSelectedMfac)?.name || ssSelectedMfac) : 'All Companies';
 
       const headerRows = [
-        [' Tara Medicos Pvt Ltd, Jaipur'],
-        [`Date: ${dateStr}`],
-        [`Branch Stock and Sales Statement: ${reportMonth || ''} ${reportYear || ''}`],
-        [companyName ? `Company: ${companyName}` : ''],
+        [' Tara Medicos Pvt Ltd, Jaipur (Branch)'],
+        [` Date: ${dateStr}  `],
+        [`Branch Stock and Sales Summary From: ${reportMonth || ''} ${reportYear || ''}`],
+        [`Company: ${companyName}`],
         [],
         ['Item Code', 'Item Name', 'Pack', 'Mfac Code', 'Mfac Name', 'Op Bal', 'Op Value', 'Pur Qty', 'Pur Value', 'Pur Sch Qty', 'Sale Qty', 'Sale Value', 'Free Qty', 'Bal Qty', 'Bal Value']
       ];
@@ -387,9 +387,12 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
       const totalQtyRow = ['Total (Qty)', '', '', '', '', totalOpQty, '', totalPurQty, '', '', totalSaleQty, '', totalFreeQty, totalBalQty, ''];
       const totalValRow = ['Total (Val)', '', '', '', '', '', Number(totalOpVal.toFixed(2)), '', Number(totalPurVal.toFixed(2)), '', '', Number(totalSaleVal.toFixed(2)), '', '', Number(totalBalVal.toFixed(2))];
 
+      const divLabel = companyName || 'Branch_SS';
+      const fileName = `Branch_SS_Statement_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${dateStr.replace(/\//g, '-')}.xlsx`;
+
       downloadStyledExcel(
-        'Branch S&S Statement',
-        `Branch_SS_Statement_${reportMonth}_${reportYear}.xlsx`,
+        divLabel,
+        fileName,
         headerRows,
         dataRows,
         totalQtyRow,
@@ -401,7 +404,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
     }
   };
 
-  // Export Branch CW to Excel
+  // Export Branch CW to Excel — Exactly matching simple CW format
   const handleDownloadCwExcel = async () => {
     try {
       toast.info('Preparing Branch Customer Wise export...');
@@ -420,48 +423,58 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
 
       const today = new Date();
       const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const companyName = cwSelectedMfac ? (cwManufacturers.find(m => m.code === cwSelectedMfac)?.name || cwSelectedMfac) : '';
+      const companyName = cwSelectedMfac ? (cwManufacturers.find(m => m.code === cwSelectedMfac)?.name || cwSelectedMfac) : 'All Companies';
 
       const headerRows = [
-        [' Tara Medicos Pvt Ltd, Jaipur'],
-        [`Date: ${dateStr}`],
-        [`Branch Customer Wise Statement: ${reportMonth || ''} ${reportYear || ''}`],
-        [companyName ? `Company: ${companyName}` : ''],
+        [' Tara Medicos Pvt Ltd, Jaipur (Branch)'],
+        [` Date: ${dateStr}  `],
+        [`Branch Customer Wise Sales from : ${reportMonth || ''} ${reportYear || ''}`],
+        [`Company: ${companyName}`],
         [],
-        ['Seq', 'Mfac Code', 'Company Division', 'Customer Code', 'Customer Name', 'Customer Address', 'Customer City', 'Item Code', 'Item Name', 'Pack Name', 'Qty', 'Scheme Qty', 'Sale Rate', 'Amount', 'Discount']
+        ['Item Name', 'Pack Size', 'Qty', 'Scheme Qty', 'Sale Rate', 'Amount', 'Customer Code', 'Customer Name', 'Address', 'City']
       ];
 
       const dataRows = allData.map(r => [
-        r.seqNo || '',
-        r.mfacCode || '',
-        r.companyDivision || '',
+        r.itemName || '',
+        r.packName || r.pack || '',
+        Math.round(Number(r.qty) || 0),
+        Math.round(Number(r.schemeQty) || 0),
+        Number(r.saleRate) ? { v: Number(r.saleRate), t: 'n', z: '0.00' } : 0.00,
+        { v: Number(r.amount || ((Number(r.qty) || 0) * (Number(r.saleRate) || 0))), t: 'n', z: '0.00' },
         r.customerCode || '',
         r.customerName || '',
         r.customerAddress || '',
-        r.customerCity || '',
-        r.itemCode || '',
-        r.itemName || '',
-        r.packName || '',
-        Number(r.qty) || 0,
-        Number(r.schemeQty) || 0,
-        Number(r.saleRate) || 0,
-        Number(r.amount || ((Number(r.qty) || 0) * (Number(r.saleRate) || 0))) || 0,
-        Number(r.discount) || 0
+        r.customerCity || ''
       ]);
 
       const totalQty = allData.reduce((s, r) => s + (Number(r.qty) || 0), 0);
       const totalSchemeQty = allData.reduce((s, r) => s + (Number(r.schemeQty) || 0), 0);
       const totalAmount = allData.reduce((s, r) => s + (Number(r.amount || ((Number(r.qty) || 0) * (Number(r.saleRate) || 0))) || 0), 0);
-      const totalDiscount = allData.reduce((s, r) => s + (Number(r.discount) || 0), 0);
 
-      const totalRow = ['Total', '', '', '', '', '', '', '', '', '', totalQty, totalSchemeQty, '', Number(totalAmount.toFixed(2)), Number(totalDiscount.toFixed(2))];
+      const totalRow = [
+        'Total',
+        '',
+        Math.round(totalQty),
+        Math.round(totalSchemeQty),
+        '',
+        { v: Number(totalAmount.toFixed(2)), t: 'n', z: '0.00' },
+        '',
+        '',
+        '',
+        ''
+      ];
+
+      const divLabel = companyName || 'Branch_CustomerWise';
+      const fileName = `Branch_Customer_Wise_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${dateStr.replace(/\//g, '-')}.xlsx`;
 
       downloadStyledExcel(
-        'Branch Customer Wise',
-        `Branch_Customer_Wise_${reportMonth}_${reportYear}.xlsx`,
+        divLabel,
+        fileName,
         headerRows,
         dataRows,
-        totalRow
+        totalRow,
+        null,
+        [0, 1]
       );
       toast.success('Branch Customer Wise exported successfully!');
     } catch (err) {
