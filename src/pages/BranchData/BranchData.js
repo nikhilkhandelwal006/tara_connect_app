@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { representativesAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 import { FiUploadCloud, FiDownload, FiSearch, FiX, FiChevronDown, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
@@ -277,6 +277,55 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
     }
   };
 
+  // Helper for styled Excel export with header metadata and totals
+  const downloadStyledExcel = (title, filename, headerRows, dataRows, totalRow = null, valueRow = null) => {
+    const wb = XLSX.utils.book_new();
+    const allRows = [];
+
+    // Meta header rows (Company name, date, report period, division)
+    for (let i = 0; i < headerRows.length - 1; i++) {
+      allRows.push([headerRows[i][0] || '']);
+    }
+
+    // Column headers row
+    const colHeaders = headerRows[headerRows.length - 1];
+    const colCount = colHeaders.length || 10;
+    allRows.push(colHeaders);
+
+    // Data rows
+    dataRows.forEach(row => allRows.push(row));
+
+    // Totals rows
+    if (totalRow) allRows.push(totalRow);
+    if (valueRow) allRows.push(valueRow);
+
+    const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+    // Column widths
+    ws['!cols'] = Array.from({ length: colCount }, (_, i) => ({
+      wch: i === 0 ? 18 : (i === 1 ? 32 : 14)
+    }));
+
+    // Merge meta header rows across columns
+    const metaRowCount = headerRows.length - 1;
+    ws['!merges'] = Array.from({ length: metaRowCount }, (_, i) => ({
+      s: { r: i, c: 0 },
+      e: { r: i, c: colCount - 1 }
+    }));
+
+    XLSX.utils.book_append_sheet(wb, ws, title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 31));
+
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.endsWith('.xlsx') ? filename : filename.replace(/\.[^.]+$/, '.xlsx');
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+  };
+
   // Export Branch SS to Excel
   const handleDownloadSsExcel = async () => {
     try {
@@ -294,54 +343,58 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
       const allData = res.data.data || [];
       if (allData.length === 0) { toast.warn('No records to export'); return; }
 
-      const rows = allData.map(r => ({
-        'Item Code': r.itemCode || '',
-        'Item Name': r.itemName || '',
-        'Pack': r.pack || '',
-        'Mfac Code': r.mfacCode || '',
-        'Mfac Name': r.mfacName || '',
-        'Op Bal': r.opBalance || 0,
-        'Op Value': r.opValue || 0,
-        'Pur Qty': r.purQty || 0,
-        'Pur Value': r.purValue || 0,
-        'Pur Sch Qty': r.purSchQty || 0,
-        'Sale Qty': r.saleQty || 0,
-        'Sale Value': r.saleValue || 0,
-        'Free Qty': r.freeQty || 0,
-        'Bal Qty': r.balQty || 0,
-        'Bal Value': r.balValue || 0
-      }));
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const companyName = ssSelectedMfac ? (ssManufacturers.find(m => m.code === ssSelectedMfac)?.name || ssSelectedMfac) : '';
 
-      // Totals row — Qty
-      rows.push({
-        'Item Code': 'TOTAL (Qty)', 'Item Name': '', 'Pack': '', 'Mfac Code': '', 'Mfac Name': '',
-        'Op Bal': allData.reduce((s, r) => s + (Number(r.opBalance) || 0), 0),
-        'Op Value': '',
-        'Pur Qty': allData.reduce((s, r) => s + (Number(r.purQty) || 0) + (Number(r.purSchQty) || 0), 0),
-        'Pur Value': '', 'Pur Sch Qty': '',
-        'Sale Qty': allData.reduce((s, r) => s + (Number(r.saleQty) || 0), 0),
-        'Sale Value': '',
-        'Free Qty': allData.reduce((s, r) => s + (Number(r.freeQty) || 0), 0),
-        'Bal Qty': allData.reduce((s, r) => s + (Number(r.balQty) || 0), 0),
-        'Bal Value': ''
-      });
-      // Totals row — Value
-      rows.push({
-        'Item Code': 'TOTAL (Val)', 'Item Name': '', 'Pack': '', 'Mfac Code': '', 'Mfac Name': '',
-        'Op Bal': '',
-        'Op Value': allData.reduce((s, r) => s + (Number(r.opValue) || 0), 0).toFixed(2),
-        'Pur Qty': '',
-        'Pur Value': allData.reduce((s, r) => s + (Number(r.purValue) || 0), 0).toFixed(2),
-        'Pur Sch Qty': '', 'Sale Qty': '',
-        'Sale Value': allData.reduce((s, r) => s + (Number(r.saleValue) || 0), 0).toFixed(2),
-        'Free Qty': '', 'Bal Qty': '',
-        'Bal Value': allData.reduce((s, r) => s + (Number(r.balValue) || 0), 0).toFixed(2)
-      });
+      const headerRows = [
+        [' Tara Medicos Pvt Ltd, Jaipur'],
+        [`Date: ${dateStr}`],
+        [`Branch Stock and Sales Statement: ${reportMonth || ''} ${reportYear || ''}`],
+        [companyName ? `Company: ${companyName}` : ''],
+        [],
+        ['Item Code', 'Item Name', 'Pack', 'Mfac Code', 'Mfac Name', 'Op Bal', 'Op Value', 'Pur Qty', 'Pur Value', 'Pur Sch Qty', 'Sale Qty', 'Sale Value', 'Free Qty', 'Bal Qty', 'Bal Value']
+      ];
 
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Branch S&S Statement');
-      XLSX.writeFile(wb, `Branch_SS_Statement_${reportMonth}_${reportYear}.xlsx`);
+      const dataRows = allData.map(r => [
+        r.itemCode || '',
+        r.itemName || '',
+        r.pack || '',
+        r.mfacCode || '',
+        r.mfacName || '',
+        Number(r.opBalance) || 0,
+        Number(r.opValue || 0),
+        Number(r.purQty) || 0,
+        Number(r.purValue || 0),
+        Number(r.purSchQty) || 0,
+        Number(r.saleQty) || 0,
+        Number(r.saleValue || 0),
+        Number(r.freeQty) || 0,
+        Number(r.balQty) || 0,
+        Number(r.balValue || 0)
+      ]);
+
+      const totalOpQty = allData.reduce((s, r) => s + (Number(r.opBalance) || 0), 0);
+      const totalOpVal = allData.reduce((s, r) => s + (Number(r.opValue) || 0), 0);
+      const totalPurQty = allData.reduce((s, r) => s + (Number(r.purQty) || 0) + (Number(r.purSchQty) || 0), 0);
+      const totalPurVal = allData.reduce((s, r) => s + (Number(r.purValue) || 0), 0);
+      const totalSaleQty = allData.reduce((s, r) => s + (Number(r.saleQty) || 0), 0);
+      const totalSaleVal = allData.reduce((s, r) => s + (Number(r.saleValue) || 0), 0);
+      const totalFreeQty = allData.reduce((s, r) => s + (Number(r.freeQty) || 0), 0);
+      const totalBalQty = allData.reduce((s, r) => s + (Number(r.balQty) || 0), 0);
+      const totalBalVal = allData.reduce((s, r) => s + (Number(r.balValue) || 0), 0);
+
+      const totalQtyRow = ['Total (Qty)', '', '', '', '', totalOpQty, '', totalPurQty, '', '', totalSaleQty, '', totalFreeQty, totalBalQty, ''];
+      const totalValRow = ['Total (Val)', '', '', '', '', '', Number(totalOpVal.toFixed(2)), '', Number(totalPurVal.toFixed(2)), '', '', Number(totalSaleVal.toFixed(2)), '', '', Number(totalBalVal.toFixed(2))];
+
+      downloadStyledExcel(
+        'Branch S&S Statement',
+        `Branch_SS_Statement_${reportMonth}_${reportYear}.xlsx`,
+        headerRows,
+        dataRows,
+        totalQtyRow,
+        totalValRow
+      );
       toast.success('Branch S&S Statement exported successfully!');
     } catch (err) {
       toast.error('Failed to export Branch S&S Statement');
@@ -365,28 +418,51 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
       const allData = res.data.data || [];
       if (allData.length === 0) { toast.warn('No records to export'); return; }
 
-      const rows = allData.map(r => ({
-        'Seq': r.seqNo || '',
-        'Mfac Code': r.mfacCode || '',
-        'Company Division': r.companyDivision || '',
-        'Customer Code': r.customerCode || '',
-        'Customer Name': r.customerName || '',
-        'Customer Address': r.customerAddress || '',
-        'Customer City': r.customerCity || '',
-        'Item Code': r.itemCode || '',
-        'Item Name': r.itemName || '',
-        'Pack Name': r.packName || '',
-        'Qty': r.qty || 0,
-        'Scheme Qty': r.schemeQty || 0,
-        'Sale Rate': r.saleRate || 0,
-        'Amount': r.amount || 0,
-        'Discount': r.discount || 0
-      }));
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const companyName = cwSelectedMfac ? (cwManufacturers.find(m => m.code === cwSelectedMfac)?.name || cwSelectedMfac) : '';
 
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Branch Customer Wise');
-      XLSX.writeFile(wb, `Branch_Customer_Wise_${reportMonth}_${reportYear}.xlsx`);
+      const headerRows = [
+        [' Tara Medicos Pvt Ltd, Jaipur'],
+        [`Date: ${dateStr}`],
+        [`Branch Customer Wise Statement: ${reportMonth || ''} ${reportYear || ''}`],
+        [companyName ? `Company: ${companyName}` : ''],
+        [],
+        ['Seq', 'Mfac Code', 'Company Division', 'Customer Code', 'Customer Name', 'Customer Address', 'Customer City', 'Item Code', 'Item Name', 'Pack Name', 'Qty', 'Scheme Qty', 'Sale Rate', 'Amount', 'Discount']
+      ];
+
+      const dataRows = allData.map(r => [
+        r.seqNo || '',
+        r.mfacCode || '',
+        r.companyDivision || '',
+        r.customerCode || '',
+        r.customerName || '',
+        r.customerAddress || '',
+        r.customerCity || '',
+        r.itemCode || '',
+        r.itemName || '',
+        r.packName || '',
+        Number(r.qty) || 0,
+        Number(r.schemeQty) || 0,
+        Number(r.saleRate) || 0,
+        Number(r.amount || ((Number(r.qty) || 0) * (Number(r.saleRate) || 0))) || 0,
+        Number(r.discount) || 0
+      ]);
+
+      const totalQty = allData.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+      const totalSchemeQty = allData.reduce((s, r) => s + (Number(r.schemeQty) || 0), 0);
+      const totalAmount = allData.reduce((s, r) => s + (Number(r.amount || ((Number(r.qty) || 0) * (Number(r.saleRate) || 0))) || 0), 0);
+      const totalDiscount = allData.reduce((s, r) => s + (Number(r.discount) || 0), 0);
+
+      const totalRow = ['Total', '', '', '', '', '', '', '', '', '', totalQty, totalSchemeQty, '', Number(totalAmount.toFixed(2)), Number(totalDiscount.toFixed(2))];
+
+      downloadStyledExcel(
+        'Branch Customer Wise',
+        `Branch_Customer_Wise_${reportMonth}_${reportYear}.xlsx`,
+        headerRows,
+        dataRows,
+        totalRow
+      );
       toast.success('Branch Customer Wise exported successfully!');
     } catch (err) {
       toast.error('Failed to export Branch Customer Wise');

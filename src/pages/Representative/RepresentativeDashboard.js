@@ -2929,7 +2929,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
         [` Non-Moving / Excess Stock Report (Period: ${periodDisplay})`],
         [` Company: ${mfacLabel}`],
         [],
-        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Company']
+        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Excess / Non-Moving Qty', 'Company']
       ];
 
       const dataRows = allData.map(item => {
@@ -3055,6 +3055,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                     <th style={{ textAlign: 'right', color: 'var(--accent)' }}>Total Qty (Op + Pur)</th>
                     <th style={{ textAlign: 'right' }}>Total Sale Qty (3 Mon)</th>
                     <th style={{ textAlign: 'right', fontWeight: 700 }}>Bal. Qty (Total - Sale)</th>
+                    <th style={{ textAlign: 'right', color: '#f59e0b' }}>Excess / Non-Moving Qty</th>
                     {isAdmin && <th>Company</th>}
                   </tr>
                 </thead>
