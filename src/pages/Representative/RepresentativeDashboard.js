@@ -2983,7 +2983,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
             Non-Moving / Excess Stock 📦
           </h1>
           <p style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            Items with excess ending balance vs 3-month total sales
+            Items with excess 
             {periodDisplay && (
               <span style={{ padding: '3px 12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', borderRadius: '12px', fontSize: '13px', fontWeight: 700, border: '1px solid rgba(245,158,11,0.3)' }}>
                 Period: {periodDisplay} (3 Months Cycle)
@@ -3085,6 +3085,16 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                     );
                   })}
                 </tbody>
+                <tfoot>
+                  <tr style={{ background: 'rgba(245, 158, 11, 0.08)', fontWeight: 700, borderTop: '2px solid var(--border)', fontSize: '13px' }}>
+                    <td style={{ color: 'var(--text-white)' }}>Total Excess Qty</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td>
+                    <td style={{ textAlign: 'right', color: '#f59e0b', fontWeight: 800, fontSize: '14px' }}>
+                      {data.filter(item => (Number(item.excessQty) || 0) > 0).reduce((s, i) => s + (Number(i.excessQty) || 0), 0)}
+                    </td>
+                    {isAdmin && <td></td>}
+                  </tr>
+                </tfoot>
               </table>
             </div>
 

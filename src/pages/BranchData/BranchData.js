@@ -681,48 +681,50 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
                       </tr>
                     ))}
                   </tbody>
-                   <tfoot>
-                     <tr style={{ background: 'rgba(99,102,241,0.1)', fontWeight: 700, borderTop: '2px solid var(--border)', fontSize: '13px' }}>
-                       <td style={{ color: 'var(--text-white)' }}>Total (Qty)</td>
-                       <td></td><td></td><td></td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                         {ssData.reduce((s, i) => s + (Number(i.opBalance) || 0), 0)}
-                       </td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                         {ssData.reduce((s, i) => s + (Number(i.purQty) || 0) + (Number(i.purSchQty) || 0), 0)}
-                       </td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                       <td style={{ textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
-                         {ssData.reduce((s, i) => s + (Number(i.saleQty) || 0), 0)}
-                       </td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                       <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
-                         {ssData.reduce((s, i) => s + (Number(i.balQty) || 0), 0)}
-                       </td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                     </tr>
-                     <tr style={{ background: 'rgba(99,102,241,0.05)', fontWeight: 700, borderTop: '1px solid var(--border)', fontSize: '13px' }}>
-                       <td style={{ color: 'var(--accent)' }}>Total (Val)</td>
-                       <td></td><td></td><td></td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                         {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.opValue) || 0), 0).toFixed(2)}
-                       </td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                         {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.purValue) || 0), 0).toFixed(2)}
-                       </td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                       <td style={{ textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
-                         {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.saleValue) || 0), 0).toFixed(2)}
-                       </td>
-                       <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
-                       <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
-                         {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.balValue) || 0), 0).toFixed(2)}
-                       </td>
-                     </tr>
-                   </tfoot>
+                   {!isAdmin && ssPage >= ssTotalPages && (
+                     <tfoot>
+                       <tr style={{ background: 'rgba(99,102,241,0.1)', fontWeight: 700, borderTop: '2px solid var(--border)', fontSize: '13px' }}>
+                         <td style={{ color: 'var(--text-white)' }}>Total (Qty)</td>
+                         <td></td><td></td><td></td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
+                           {ssData.reduce((s, i) => s + (Number(i.opBalance) || 0), 0)}
+                         </td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
+                           {ssData.reduce((s, i) => s + (Number(i.purQty) || 0) + (Number(i.purSchQty) || 0), 0)}
+                         </td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                         <td style={{ textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
+                           {ssData.reduce((s, i) => s + (Number(i.saleQty) || 0), 0)}
+                         </td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                         <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
+                           {ssData.reduce((s, i) => s + (Number(i.balQty) || 0), 0)}
+                         </td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                       </tr>
+                       <tr style={{ background: 'rgba(99,102,241,0.05)', fontWeight: 700, borderTop: '1px solid var(--border)', fontSize: '13px' }}>
+                         <td style={{ color: 'var(--accent)' }}>Total (Val)</td>
+                         <td></td><td></td><td></td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
+                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.opValue) || 0), 0).toFixed(2)}
+                         </td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
+                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.purValue) || 0), 0).toFixed(2)}
+                         </td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                         <td style={{ textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
+                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.saleValue) || 0), 0).toFixed(2)}
+                         </td>
+                         <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
+                         <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
+                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.balValue) || 0), 0).toFixed(2)}
+                         </td>
+                       </tr>
+                     </tfoot>
+                   )}
                 </table>
               </div>
 
