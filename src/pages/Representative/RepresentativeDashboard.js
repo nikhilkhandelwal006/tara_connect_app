@@ -3146,7 +3146,6 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalExcessQty, setTotalExcessQty] = useState(0);
-  const [totalExcessValue, setTotalExcessValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [selectedMfac, setSelectedMfac] = useState('');
@@ -3175,7 +3174,6 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
       setPage(res.data.page || 1);
       setTotalPages(res.data.totalPages || 1);
       setTotalExcessQty(res.data.totalExcessQty || 0);
-      setTotalExcessValue(res.data.totalExcessValue || 0);
       setPeriodDisplay(res.data.periodDisplay || '');
       setReportMonth(res.data.reportMonth || '');
       setReportYear(res.data.reportYear || '');
@@ -3221,13 +3219,11 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
         [` Non-Moving / Excess Stock Report (Period: ${periodDisplay})`],
         [` Company: ${mfacLabel}`],
         [],
-        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Excess / Non-Moving Qty', 'Rate', 'Excess Value', 'Company']
+        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Excess / Non-Moving Qty', 'Company']
       ];
 
       const dataRows = allData.map(item => {
         const totQ = (Number(item.opBalance) || 0) + (Number(item.purQty) || 0);
-        const rate = Number(item.saleRate) || 0;
-        const excessVal = Number(item.excessValue) || ((Number(item.excessQty) || 0) * rate);
         return [
           item.itemName || '',
           item.pack || '',
@@ -3237,8 +3233,6 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
           Number(item.saleQty) || 0,
           Number(item.balQty) || 0,
           item.excessQty > 0 ? item.excessQty : '-',
-          { v: Number(rate.toFixed(2)), t: 'n', z: '0.00' },
-          { v: Number(excessVal.toFixed(2)), t: 'n', z: '0.00' },
           item.mfacName || ''
         ];
       });
@@ -3249,11 +3243,9 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
       const totalSale = allData.reduce((s, i) => s + (Number(i.saleQty) || 0), 0);
       const totalBal = allData.reduce((s, i) => s + (Number(i.balQty) || 0), 0);
       const totalExcess = res.data.totalExcessQty || allData.reduce((s, i) => s + (Number(i.excessQty) || 0), 0);
-      const totalExcessVal = res.data.totalExcessValue || allData.reduce((s, i) => s + (Number(i.excessValue) || ((Number(i.excessQty) || 0) * (Number(i.saleRate) || 0))), 0);
 
       const totalRow = [
-        'Total', '', totalOp, totalPur, totalTot, totalSale, totalBal, totalExcess, '',
-        { v: Number(totalExcessVal.toFixed(2)), t: 'n', z: '0.00' }, ''
+        'Total', '', totalOp, totalPur, totalTot, totalSale, totalBal, totalExcess, ''
       ];
 
       const wb = XLSX.utils.book_new();
@@ -3261,7 +3253,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
       const ws = XLSX.utils.aoa_to_sheet(wsData);
 
       ws['!cols'] = [
-        { wch: 32 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 22 }, { wch: 20 }, { wch: 24 }, { wch: 14 }, { wch: 18 }, { wch: 24 }
+        { wch: 32 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 22 }, { wch: 20 }, { wch: 24 }, { wch: 24 }
       ];
 
       XLSX.utils.book_append_sheet(wb, ws, 'Non-Moving Stock');
@@ -3345,7 +3337,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
         ) : (
           <>
             <div className="table-container" style={{ overflowX: 'auto' }}>
-              <table className="table scrollable" style={{ width: '100%', minWidth: '1150px' }}>
+              <table className="table scrollable" style={{ width: '100%', minWidth: '1050px' }}>
                 <thead>
                   <tr>
                     <th>Item Name</th>
@@ -3356,14 +3348,12 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                     <th style={{ textAlign: 'right' }}>Total Sale Qty (3 Mon)</th>
                     <th style={{ textAlign: 'right', fontWeight: 700 }}>Bal. Qty (Total - Sale)</th>
                     <th style={{ textAlign: 'right', color: '#f59e0b' }}>Excess / Non-Moving Qty</th>
-                    <th style={{ textAlign: 'right', color: '#10b981' }}>Excess Value</th>
                     {isAdmin && <th>Company</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {data.filter(item => (Number(item.excessQty) || 0) > 0).map((item, idx) => {
                     const totQ = (Number(item.opBalance) || 0) + (Number(item.purQty) || 0);
-                    const excessVal = Number(item.excessValue) || ((Number(item.excessQty) || 0) * (Number(item.saleRate) || 0));
                     return (
                       <tr key={item._id || idx}>
                         <td style={{ color: 'var(--text-white)', fontWeight: 500 }}>{item.itemName || '—'}</td>
@@ -3382,9 +3372,6 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                             <span style={{ color: 'var(--text-muted)' }}>—</span>
                           )}
                         </td>
-                        <td style={{ textAlign: 'right', fontWeight: 600, color: '#10b981' }}>
-                          ₹{excessVal.toFixed(2)}
-                        </td>
                         {isAdmin && <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.mfacName || '—'}</td>}
                       </tr>
                     );
@@ -3392,13 +3379,10 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                 </tbody>
                 <tfoot>
                   <tr style={{ background: 'rgba(245, 158, 11, 0.08)', fontWeight: 700, borderTop: '2px solid var(--border)', fontSize: '13px' }}>
-                    <td style={{ color: 'var(--text-white)' }}>Total</td>
+                    <td style={{ color: 'var(--text-white)' }}>Total Excess Qty</td>
                     <td></td><td></td><td></td><td></td><td></td><td></td>
                     <td style={{ textAlign: 'right', color: '#f59e0b', fontWeight: 800, fontSize: '14px' }}>
                       {totalExcessQty || data.filter(item => (Number(item.excessQty) || 0) > 0).reduce((s, i) => s + (Number(i.excessQty) || 0), 0)}
-                    </td>
-                    <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 800, fontSize: '14px' }}>
-                      ₹{(totalExcessValue || data.filter(item => (Number(item.excessQty) || 0) > 0).reduce((s, i) => s + (Number(i.excessValue) || 0), 0)).toFixed(2)}
                     </td>
                     {isAdmin && <td></td>}
                   </tr>
