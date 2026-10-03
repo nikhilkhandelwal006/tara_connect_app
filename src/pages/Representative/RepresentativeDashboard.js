@@ -50,6 +50,7 @@ const getFormattedCwPeriod = (monthName, year) => {
 };
 
 const SS_TYPES = ['ss_excel', 'ss_pdf', 'summary_excel', 'summary_pdf'];
+const CW_TYPES = ['cw_excel', 'cw_pdf'];
 
 const checkDownloadLimit = (userOrId, type, label) => {
   if (!userOrId) return true;
@@ -69,13 +70,16 @@ const checkDownloadLimit = (userOrId, type, label) => {
   if (!userId) return true;
   
   const today = new Date().toISOString().split('T')[0];
-  const limit = type === 'cw_excel' ? cwLimit : ssLimit;
+  const isCw = CW_TYPES.includes(type);
+  const limit = isCw ? cwLimit : ssLimit;
 
   let currentCount = 0;
-  if (type === 'cw_excel') {
-    // CW: count only cw_excel
-    const val = localStorage.getItem(`dl_limit_${userId}_${today}_cw_excel`);
-    currentCount = parseInt(val, 10) || 0;
+  if (isCw) {
+    // CW: count cw_excel + cw_pdf
+    CW_TYPES.forEach(t => {
+      const val = localStorage.getItem(`dl_limit_${userId}_${today}_${t}`);
+      currentCount += parseInt(val, 10) || 0;
+    });
   } else {
     // S&S: count ALL types combined (ss_excel + ss_pdf + summary_excel + summary_pdf)
     SS_TYPES.forEach(t => {
@@ -85,8 +89,8 @@ const checkDownloadLimit = (userOrId, type, label) => {
   }
 
   if (currentCount >= limit) {
-    toast.warning(`Daily download limit reached. You are allowed ${limit} S&S download(s) per day.`, {
-      toastId: `dl-warning-ss`
+    toast.warning(`Daily download limit reached. You are allowed ${limit} ${isCw ? 'Customer Wise' : 'S&S'} download(s) per day.`, {
+      toastId: `dl-warning-${isCw ? 'cw' : 'ss'}`
     });
     return false;
   }
@@ -1508,11 +1512,30 @@ const CustomerWiseReport = () => {
       const allData = res.data.data || [];
       if (allData.length === 0) { toast.warning('No data to download'); return; }
 
-      const companyName = res.data.companyName || selectedMfac || '';
+      // Compute display company/division name properly
+      let displayCompany = '';
+      if (res.data.divisionName) {
+        displayCompany = res.data.divisionName;
+      } else if (res.data.companyName && res.data.companyName !== 'All Companies') {
+        displayCompany = res.data.companyName;
+      } else if (selectedMfac) {
+        const found = manufacturers.find(m => m.code === selectedMfac);
+        displayCompany = found ? `${found.name} (${found.code})` : selectedMfac;
+      } else if (allData[0]?.companyDivision) {
+        displayCompany = allData[0].companyDivision;
+      } else if (manufacturers.length === 1 && manufacturers[0]?.name) {
+        displayCompany = manufacturers[0].name;
+      } else if (user?.name) {
+        displayCompany = user.name;
+      } else {
+        displayCompany = 'All Divisions';
+      }
+
       const today = new Date();
       const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const rMonth = histMonth || res.data.reportMonth || '';
       const rYear = histYear || res.data.reportYear || '';
+      const displayPeriod = `${rMonth} ${rYear}`.trim() || 'Current';
 
       // Group data by customer
       const customerMap = new Map();
@@ -1536,64 +1559,82 @@ const CustomerWiseReport = () => {
       const pageW = doc.internal.pageSize.width;
       const pageH = doc.internal.pageSize.height;
 
-      const drawHeader = () => {
+      // Draw Main Header ONLY on page 1
+      const drawMainHeader = () => {
         const logoW = 14;
         const logoH = img ? (img.height / img.width) * logoW : 0;
-        if (img) doc.addImage(img, 'PNG', 14, 8, logoW, logoH);
-        const tx = img ? 14 + logoW + 3 : 14;
+        if (img) doc.addImage(img, 'PNG', 12, 8, logoW, logoH);
+        const tx = img ? 12 + logoW + 4 : 12;
+
         doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 80);
-        doc.text('Tara Medicos Pvt Ltd, Jaipur', tx, 14);
-        doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
-        doc.text('Shop No. 15, Chandpole Bazar, Jaipur - 302001 | Ph: 0141-2318580', tx, 19);
+        doc.text('Tara Medicos Pvt Ltd, Jaipur', tx, 13);
+
+        doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
+        doc.text('Shop No. 15, Chandpole Bazar, Jaipur - 302001 | Ph: 0141-2318580', tx, 18);
+
         doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(50, 50, 50);
-        doc.text(`Customer Wise Sales Report  |  Period: ${rMonth} ${rYear}`, tx, 24);
-        if (companyName) doc.text(`Company / Division: ${companyName}`, tx, 29);
-        doc.setTextColor(180, 180, 180);
-        doc.text(`Date: ${dateStr}`, pageW - 14, 14, { align: 'right' });
+        doc.text(`Customer Wise Sales Report  |  Period: ${displayPeriod}`, tx, 23);
+
+        doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(70, 70, 130);
+        doc.text(`Company / Division: ${displayCompany}`, tx, 28);
+
+        doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(140, 140, 140);
+        doc.text(`Date: ${dateStr}`, pageW - 12, 13, { align: 'right' });
+
+        // Divider line
         doc.setDrawColor(99, 102, 241);
         doc.setLineWidth(0.5);
-        doc.line(14, 32, pageW - 14, 32);
+        doc.line(12, 31, pageW - 12, 31);
         doc.setTextColor(0, 0, 0);
       };
 
-      drawHeader();
-      let curY = 36;
+      // Draw Page 1 header
+      drawMainHeader();
+      let curY = 35;
       const customers = Array.from(customerMap.values());
 
       customers.forEach((cust, ci) => {
-        if (curY > pageH - 40) {
+        // If remaining vertical space is too small for banner + table header + a couple rows, break page
+        if (curY > pageH - 45) {
           doc.addPage();
-          drawHeader();
-          curY = 36;
+          curY = 16;
         }
 
-        doc.setFillColor(237, 237, 255);
-        doc.roundedRect(14, curY, pageW - 28, 10, 2, 2, 'F');
-        doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 100);
-        doc.text(`${ci + 1}. ${cust.customerName}`, 17, curY + 7);
+        // Customer Banner Bar
+        doc.setFillColor(243, 244, 254);
+        doc.roundedRect(12, curY, pageW - 24, 8.5, 1.5, 1.5, 'F');
+
+        doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 90);
+        doc.text(`${ci + 1}. ${cust.customerName}`, 15, curY + 5.8);
+
         if (cust.customerCode) {
-          doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 160);
-          doc.text(`Code: ${cust.customerCode}`, pageW - 16, curY + 7, { align: 'right' });
+          doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(99, 102, 241);
+          doc.text(`Code: ${cust.customerCode}`, pageW - 15, curY + 5.8, { align: 'right' });
         }
-        curY += 12;
+        curY += 10.5;
 
+        // Optional Address Line
         if (cust.customerAddress || cust.customerCity) {
-          doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
           const addrLine = [cust.customerAddress, cust.customerCity].filter(Boolean).join(', ');
-          doc.text(`Addr: ${addrLine}`, 17, curY);
-          curY += 5;
+          doc.setFontSize(7.2); doc.setFont('helvetica', 'normal'); doc.setTextColor(110, 110, 110);
+          doc.text(`Address: ${addrLine}`, 15, curY);
+          curY += 4.5;
         }
 
+        // Table definition
         const tableHead = [['#', 'Item Name', 'Pack', 'Qty', 'Sch.Qty', 'Rate', 'Amount']];
         const tableBody = cust.items.map((item, idx) => {
+          const qty = Math.round(Number(item.qty) || 0);
+          const schQty = Math.round(Number(item.schemeQty) || 0);
+          const rate = Number(item.saleRate || 0);
           const amount = (Number(item.qty) || 0) * (Number(item.saleRate) || 0);
           return [
             idx + 1,
             item.itemName || '-',
-            item.packName || '',
-            Math.round(Number(item.qty) || 0),
-            Math.round(Number(item.schemeQty) || 0),
-            Number(item.saleRate || 0).toFixed(2),
+            item.packName || item.pack || '',
+            qty,
+            schQty,
+            rate > 0 ? rate.toFixed(2) : '0.00',
             amount.toFixed(2)
           ];
         });
@@ -1606,51 +1647,73 @@ const CustomerWiseReport = () => {
           startY: curY,
           head: tableHead,
           body: tableBody,
-          foot: [['', 'Total', '', Math.round(totalQty), Math.round(totalSchQty), '', totalAmt.toFixed(2)]],
-          margin: { left: 14, right: 14 },
-          styles: { fontSize: 7.8, cellPadding: 2, valign: 'middle', overflow: 'linebreak' },
-          headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
-          footStyles: { fillColor: [220, 225, 255], textColor: [30, 30, 100], fontStyle: 'bold', fontSize: 8 },
+          foot: [['', `Total (${cust.items.length} ${cust.items.length === 1 ? 'item' : 'items'})`, '', Math.round(totalQty), Math.round(totalSchQty), '', totalAmt.toFixed(2)]],
+          margin: { top: 16, bottom: 14, left: 12, right: 12 },
+          styles: { fontSize: 7.5, cellPadding: 1.8, valign: 'middle', overflow: 'linebreak' },
+          headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.8 },
+          footStyles: { fillColor: [240, 243, 255], textColor: [30, 30, 90], fontStyle: 'bold', fontSize: 7.8 },
           columnStyles: {
-            0: { cellWidth: 7, halign: 'center' },
+            0: { cellWidth: 8, halign: 'center' },
             1: { cellWidth: 'auto', halign: 'left' },
             2: { cellWidth: 18, halign: 'center' },
-            3: { cellWidth: 14, halign: 'right' },
-            4: { cellWidth: 16, halign: 'right' },
-            5: { cellWidth: 18, halign: 'right' },
-            6: { cellWidth: 22, halign: 'right' }
+            3: { cellWidth: 18, halign: 'right' },
+            4: { cellWidth: 18, halign: 'right' },
+            5: { cellWidth: 24, halign: 'right' },
+            6: { cellWidth: 28, halign: 'right' }
           },
           didParseCell: (data) => {
-            if (data.section === 'foot' && data.column.index === 6) {
-              data.cell.styles.textColor = [20, 100, 20];
+            // Strict alignment enforcement across all sections
+            if ([3, 4, 5, 6].includes(data.column.index)) {
+              data.cell.styles.halign = 'right';
+            } else if ([0, 2].includes(data.column.index)) {
+              data.cell.styles.halign = 'center';
+            } else {
+              data.cell.styles.halign = 'left';
+            }
+            if (data.section === 'foot') {
               data.cell.styles.fontStyle = 'bold';
+              if (data.column.index === 6) {
+                data.cell.styles.textColor = [16, 120, 60];
+              }
             }
           },
           didDrawPage: (data) => {
-            if (data.pageNumber > 1) drawHeader();
-            doc.setFontSize(7.5); doc.setTextColor(160, 160, 160);
-            doc.text(`Page ${data.pageNumber} of ${totalPagesExp}`, pageW - 14, pageH - 7, { align: 'right' });
-            doc.text('Tara Medicos Pvt Ltd, Jaipur', 14, pageH - 7);
+            // Top minimal runner for pages 2+
+            if (data.pageNumber > 1) {
+              doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(130, 130, 130);
+              doc.text(`Customer Wise Sales Report - ${displayCompany} (${displayPeriod})`, 12, 10);
+              doc.setDrawColor(220, 220, 230);
+              doc.setLineWidth(0.3);
+              doc.line(12, 12, pageW - 12, 12);
+            }
+            // Footer on every page
+            doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
+            doc.text('Tara Medicos Pvt Ltd, Jaipur', 12, pageH - 7);
+            doc.text(`Page ${data.pageNumber} of ${totalPagesExp}`, pageW - 12, pageH - 7, { align: 'right' });
           }
         });
 
         curY = doc.lastAutoTable.finalY + 6;
-        if (ci < customers.length - 1) {
-          doc.setDrawColor(220, 220, 220);
+        if (ci < customers.length - 1 && curY < pageH - 25) {
+          doc.setDrawColor(225, 225, 235);
           doc.setLineWidth(0.3);
-          doc.line(14, curY - 2, pageW - 14, curY - 2);
+          doc.line(12, curY - 2, pageW - 12, curY - 2);
         }
       });
 
       if (typeof doc.putTotalPages === 'function') doc.putTotalPages(totalPagesExp);
-      const divLabel = companyName || 'CW';
-      doc.save(`CW_CustomerWise_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${rMonth}_${rYear}.pdf`);
+
+      const divLabel = displayCompany || 'CW';
+      doc.save(`CW_CustomerWise_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${displayPeriod.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
       success = true;
       setDownloadSuccess(true);
+      recordDownloadSuccess(user?.id || user?._id, 'cw_pdf');
+      toast.success('Customer Wise PDF downloaded successfully!');
       setTimeout(() => { setDownloading(false); setDownloadSuccess(false); }, 1500);
     } catch (error) {
       console.error('CW PDF error:', error);
-      toast.error('Failed to generate Customer Wise PDF');
+      const errMsg = error.response?.data?.message || 'Failed to generate Customer Wise PDF';
+      toast.error(errMsg);
     } finally {
       if (!success) setDownloading(false);
     }
