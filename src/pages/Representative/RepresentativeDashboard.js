@@ -1570,7 +1570,7 @@ const CustomerWiseReport = () => {
         doc.text('Tara Medicos Pvt Ltd, Jaipur', tx, 13);
 
         doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
-        doc.text('Shop No. 15, Chandpole Bazar, Jaipur - 302001 | Ph: 0141-2318580', tx, 18);
+        doc.text('A-07, 22 Godown industrial Area, Main Road, Jaipur - 302006 | Ph: 0141-3100030', tx, 18);
 
         doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(50, 50, 50);
         doc.text(`Customer Wise Sales Report  |  Period: ${displayPeriod}`, tx, 23);
@@ -1648,6 +1648,7 @@ const CustomerWiseReport = () => {
           head: tableHead,
           body: tableBody,
           foot: [['', `Total (${cust.items.length} ${cust.items.length === 1 ? 'item' : 'items'})`, '', Math.round(totalQty), Math.round(totalSchQty), '', totalAmt.toFixed(2)]],
+          showFoot: 'lastPage',
           margin: { top: 16, bottom: 14, left: 12, right: 12 },
           styles: { fontSize: 7.5, cellPadding: 1.8, valign: 'middle', overflow: 'linebreak' },
           headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.8 },
@@ -1676,20 +1677,6 @@ const CustomerWiseReport = () => {
                 data.cell.styles.textColor = [16, 120, 60];
               }
             }
-          },
-          didDrawPage: (data) => {
-            // Top minimal runner for pages 2+
-            if (data.pageNumber > 1) {
-              doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(130, 130, 130);
-              doc.text(`Customer Wise Sales Report - ${displayCompany} (${displayPeriod})`, 12, 10);
-              doc.setDrawColor(220, 220, 230);
-              doc.setLineWidth(0.3);
-              doc.line(12, 12, pageW - 12, 12);
-            }
-            // Footer on every page
-            doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
-            doc.text('Tara Medicos Pvt Ltd, Jaipur', 12, pageH - 7);
-            doc.text(`Page ${data.pageNumber} of ${totalPagesExp}`, pageW - 12, pageH - 7, { align: 'right' });
           }
         });
 
@@ -1701,7 +1688,48 @@ const CustomerWiseReport = () => {
         }
       });
 
-      if (typeof doc.putTotalPages === 'function') doc.putTotalPages(totalPagesExp);
+      // Overall Grand Total Summary at the end of the report
+      const grandTotalQty = allData.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+      const grandTotalSchQty = allData.reduce((s, i) => s + (Number(i.schemeQty) || 0), 0);
+      const grandTotalAmt = allData.reduce((s, i) => s + ((Number(i.qty) || 0) * (Number(i.saleRate) || 0)), 0);
+
+      if (curY > pageH - 35) {
+        doc.addPage();
+        curY = 20;
+      } else {
+        curY += 3;
+      }
+
+      doc.setFillColor(238, 242, 255);
+      doc.setDrawColor(99, 102, 241);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(12, curY, pageW - 24, 16, 2, 2, 'FD');
+
+      doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 90);
+      doc.text(`OVERALL GRAND TOTAL  (${customers.length} Customers, ${allData.length} Items)`, 16, curY + 6);
+
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(60, 60, 110);
+      doc.text(`Total Qty: ${Math.round(grandTotalQty)}`, 16, curY + 12);
+      doc.text(`Total Sch. Qty: ${Math.round(grandTotalSchQty)}`, 70, curY + 12);
+
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(16, 120, 60);
+      doc.text(`Total Value: Rs ${grandTotalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageW - 16, curY + 10, { align: 'right' });
+
+      // Post-process all pages for accurate header runner and page count (Page X of Y)
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        if (i > 1) {
+          doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(130, 130, 130);
+          doc.text(`Customer Wise Sales Report - ${displayCompany} (${displayPeriod})`, 12, 10);
+          doc.setDrawColor(220, 220, 230);
+          doc.setLineWidth(0.3);
+          doc.line(12, 12, pageW - 12, 12);
+        }
+        doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(150, 150, 150);
+        doc.text('Tara Medicos Pvt Ltd, Jaipur', 12, pageH - 7);
+        doc.text(`Page ${i} of ${totalPages}`, pageW - 12, pageH - 7, { align: 'right' });
+      }
 
       const divLabel = displayCompany || 'CW';
       doc.save(`CW_CustomerWise_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${displayPeriod.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
@@ -1767,7 +1795,7 @@ const CustomerWiseReport = () => {
       <div className="page-header page-header-flex">
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            Customer Wise Report 👥
+            Customer Wise Report (H.O.) 👥
           </h1>
           <p style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             View which items were sold to which customers

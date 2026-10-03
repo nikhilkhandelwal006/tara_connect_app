@@ -354,7 +354,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
 
       const today = new Date();
       const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const companyName = ssSelectedMfac ? (ssManufacturers.find(m => m.code === ssSelectedMfac)?.name || ssSelectedMfac) : 'All Companies';
+      const companyName = (ssSelectedMfac ? ssManufacturers.find(m => m.code === ssSelectedMfac)?.name : '') || allData[0]?.mfacName || (ssManufacturers.length === 1 ? ssManufacturers[0].name : '') || (ssManufacturers[0]?.name || 'Tara Medicos');
 
       const headerRows = [
         [' Tara Medicos Pvt Ltd, Jaipur (Branch)'],
@@ -362,15 +362,12 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
         [`Branch Stock and Sales Summary From: ${reportMonth || ''} ${reportYear || ''}`],
         [`Company: ${companyName}`],
         [],
-        ['Item Code', 'Item Name', 'Pack', 'Mfac Code', 'Mfac Name', 'Op Bal', 'Op Value', 'Pur Qty', 'Pur Value', 'Pur Sch Qty', 'Sale Qty', 'Sale Value', 'Free Qty', 'Bal Qty', 'Bal Value']
+        ['Item Name', 'Pack', 'Op Bal', 'Op Value', 'Pur Qty', 'Pur Value', 'Pur Sch Qty', 'Sale Qty', 'Sale Value', 'Free Qty', 'Bal Qty', 'Bal Value']
       ];
 
       const dataRows = allData.map(r => [
-        r.itemCode || '',
         r.itemName || '',
         r.pack || '',
-        r.mfacCode || '',
-        r.mfacName || '',
         Number(r.opBalance) || 0,
         Number(r.opValue || 0),
         Number(r.purQty) || 0,
@@ -393,12 +390,9 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
       const totalBalQty = allData.reduce((s, r) => s + (Number(r.balQty) || 0), 0);
       const totalBalVal = allData.reduce((s, r) => s + (Number(r.balValue) || 0), 0);
 
-      // Single combined Total row for both Qty and Value
+      // Single combined Total row without Item Code, Mfac Code, Mfac Name
       const totalRow = [
         'Total',
-        '',
-        '',
-        '',
         '',
         totalOpQty,
         { v: Number(totalOpVal.toFixed(2)), t: 'n', z: '0.00' },
@@ -650,6 +644,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
           head: tableHead,
           body: tableBody,
           foot: [['', `Total (${cust.items.length} ${cust.items.length === 1 ? 'item' : 'items'})`, '', Math.round(totalQty), Math.round(totalSchQty), '', totalAmt.toFixed(2)]],
+          showFoot: 'lastPage',
           margin: { top: 16, bottom: 14, left: 12, right: 12 },
           styles: { fontSize: 7.5, cellPadding: 1.8, valign: 'middle', overflow: 'linebreak' },
           headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.8 },
@@ -677,18 +672,6 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
                 data.cell.styles.textColor = [16, 120, 60];
               }
             }
-          },
-          didDrawPage: (data) => {
-            if (data.pageNumber > 1) {
-              doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(130, 130, 130);
-              doc.text(`Branch Customer Wise Sales Report - ${displayCompany} (${displayPeriod})`, 12, 10);
-              doc.setDrawColor(220, 220, 230);
-              doc.setLineWidth(0.3);
-              doc.line(12, 12, pageW - 12, 12);
-            }
-            doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
-            doc.text('Tara Medicos Pvt Ltd, Jaipur (Branch)', 12, pageH - 7);
-            doc.text(`Page ${data.pageNumber} of ${totalPagesExp}`, pageW - 12, pageH - 7, { align: 'right' });
           }
         });
 
@@ -700,7 +683,49 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
         }
       });
 
-      if (typeof doc.putTotalPages === 'function') doc.putTotalPages(totalPagesExp);
+      // Overall Grand Total Summary at the end of the report
+      const grandTotalQty = allData.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+      const grandTotalSchQty = allData.reduce((s, i) => s + (Number(i.schemeQty) || 0), 0);
+      const grandTotalAmt = allData.reduce((s, i) => s + ((Number(i.qty) || 0) * (Number(i.saleRate) || 0)), 0);
+
+      if (curY > pageH - 35) {
+        doc.addPage();
+        curY = 20;
+      } else {
+        curY += 3;
+      }
+
+      doc.setFillColor(238, 242, 255);
+      doc.setDrawColor(99, 102, 241);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(12, curY, pageW - 24, 16, 2, 2, 'FD');
+
+      doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 90);
+      doc.text(`OVERALL GRAND TOTAL  (${customers.length} Customers, ${allData.length} Items)`, 16, curY + 6);
+
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(60, 60, 110);
+      doc.text(`Total Qty: ${Math.round(grandTotalQty)}`, 16, curY + 12);
+      doc.text(`Total Sch. Qty: ${Math.round(grandTotalSchQty)}`, 70, curY + 12);
+
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(16, 120, 60);
+      doc.text(`Total Value: Rs ${grandTotalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, pageW - 16, curY + 10, { align: 'right' });
+
+      // Post-process all pages for accurate header runner and page count (Page X of Y)
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        if (i > 1) {
+          doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(130, 130, 130);
+          doc.text(`Branch Customer Wise Sales Report - ${displayCompany} (${displayPeriod})`, 12, 10);
+          doc.setDrawColor(220, 220, 230);
+          doc.setLineWidth(0.3);
+          doc.line(12, 12, pageW - 12, 12);
+        }
+        doc.setFontSize(7.5); doc.setTextColor(150, 150, 150);
+        doc.text('Tara Medicos Pvt Ltd, Jaipur (Branch)', 12, pageH - 7);
+        doc.text(`Page ${i} of ${totalPages}`, pageW - 12, pageH - 7, { align: 'right' });
+      }
+
       const divLabel = displayCompany || 'Branch_CW';
       doc.save(`Branch_CW_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${displayPeriod.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
       toast.success('Branch CW PDF downloaded successfully!');
@@ -825,7 +850,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
               <div ref={ssMfacRef} style={{ position: 'relative' }}>
                 <div onClick={() => setShowSsMfacDropdown(!showSsMfacDropdown)} className="form-select" style={{ width: '220px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {ssSelectedMfac ? (ssManufacturers.find(m => m.code === ssSelectedMfac)?.name || ssSelectedMfac) : 'All Manufacturers'}
+                    {ssSelectedMfac ? (ssManufacturers.find(m => m.code === ssSelectedMfac)?.name || ssSelectedMfac) : (ssManufacturers.length === 1 ? ssManufacturers[0].name : (ssData[0]?.mfacName || 'All Manufacturers'))}
                   </span>
                   <FiChevronDown size={14} />
                 </div>
@@ -995,7 +1020,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
               <div ref={cwMfacRef} style={{ position: 'relative' }}>
                 <div onClick={() => setShowCwMfacDropdown(!showCwMfacDropdown)} className="form-select" style={{ width: '220px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {cwSelectedMfac ? (cwManufacturers.find(m => m.code === cwSelectedMfac)?.name || cwSelectedMfac) : 'All Manufacturers'}
+                    {cwSelectedMfac ? (cwManufacturers.find(m => m.code === cwSelectedMfac)?.name || cwSelectedMfac) : (cwManufacturers.length === 1 ? cwManufacturers[0].name : (cwData[0]?.companyDivision || 'All Manufacturers'))}
                   </span>
                   <FiChevronDown size={14} />
                 </div>
