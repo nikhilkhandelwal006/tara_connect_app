@@ -3129,6 +3129,7 @@ const RepresentativePurchaseOrder = () => {
 };
 
 const NonMovingStockReport = ({ isAdmin = false }) => {
+  const { user } = useAuth();
   const [data, setData] = useState([]);
   const [search, setSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -3166,6 +3167,9 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
       setReportYear(res.data.reportYear || '');
       if (res.data.manufacturers) {
         setManufacturers(res.data.manufacturers);
+        if (!selectedMfac && res.data.manufacturers.length === 1) {
+          setSelectedMfac(res.data.manufacturers[0].code);
+        }
       }
     } catch (error) {
       console.error('Fetch non-moving error:', error);
@@ -3195,7 +3199,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
       }
       const today = new Date();
       const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const mfacLabel = manufacturers.find(m => m.code === selectedMfac)?.name || 'All Companies';
+      const mfacLabel = (selectedMfac ? manufacturers.find(m => m.code === selectedMfac)?.name : '') || (manufacturers.length === 1 ? manufacturers[0].name : '') || (allData[0]?.mfacName || user?.name || 'Tara Medicos');
 
       const headerRows = [
         [' Tara Medicos Pvt Ltd, Jaipur'],
@@ -3257,10 +3261,10 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
             Non-Moving / Excess Stock 📦
           </h1>
           <p style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            Items with excess 
+            Items with excess stock
             {periodDisplay && (
               <span style={{ padding: '3px 12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', borderRadius: '12px', fontSize: '13px', fontWeight: 700, border: '1px solid rgba(245,158,11,0.3)' }}>
-                Period: {periodDisplay} (3 Months Cycle)
+                Period: {periodDisplay}
               </span>
             )}
           </p>
@@ -3302,7 +3306,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
               onChange={(e) => setSelectedMfac(e.target.value)}
               style={{ flex: '0 1 220px' }}
             >
-              <option value="">All Companies</option>
+              <option value="">{manufacturers.length === 1 ? manufacturers[0].name : (data[0]?.mfacName || user?.name || 'All Companies')}</option>
               {manufacturers.map(m => (
                 <option key={m.code} value={m.code}>{m.name}</option>
               ))}
