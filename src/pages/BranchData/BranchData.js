@@ -37,6 +37,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
 
   const [ssPeriods, setSsPeriods] = useState([]);
   const [ssSelectedPeriod, setSsSelectedPeriod] = useState('');
+  const [ssGrandTotals, setSsGrandTotals] = useState(null);
   const [showSsUploadModal, setShowSsUploadModal] = useState(false);
   const [ssUploadFile, setSsUploadFile] = useState(null);
   const [ssUploadMonth, setSsUploadMonth] = useState([
@@ -141,6 +142,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
       setSsPage(res.data.page || 1);
       setSsTotalPages(res.data.totalPages || 1);
       setSsTotalCount(res.data.totalCount || 0);
+      setSsGrandTotals(res.data.grandTotals || null);
       if (res.data.manufacturers) setSsManufacturers(res.data.manufacturers || []);
     } catch (err) {
       toast.error('Failed to load Branch S&S Statement');
@@ -359,7 +361,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
       const headerRows = [
         [' Tara Medicos Pvt Ltd, Jaipur (Branch)'],
         [` Date: ${dateStr}  `],
-        [`Branch Stock and Sales Summary From: ${reportMonth || ''} ${reportYear || ''}`],
+        [` Stock and Sales Summary From: ${reportMonth || ''} ${reportYear || ''}`],
         [`Company: ${companyName}`],
         [],
         ['Item Name', 'Pack', 'Op Bal', 'Op Value', 'Pur Qty', 'Pur Value', 'Pur Sch Qty', 'Sale Qty', 'Sale Value', 'Free Qty', 'Bal Qty', 'Bal Value']
@@ -369,15 +371,15 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
         r.itemName || '',
         r.pack || '',
         Number(r.opBalance) || 0,
-        Number(r.opValue || 0),
+        { v: Number((Number(r.opValue) || 0).toFixed(2)), t: 'n', z: '0.00' },
         Number(r.purQty) || 0,
-        Number(r.purValue || 0),
+        { v: Number((Number(r.purValue) || 0).toFixed(2)), t: 'n', z: '0.00' },
         Number(r.purSchQty) || 0,
         Number(r.saleQty) || 0,
-        Number(r.saleValue || 0),
+        { v: Number((Number(r.saleValue) || 0).toFixed(2)), t: 'n', z: '0.00' },
         Number(r.freeQty) || 0,
         Number(r.balQty) || 0,
-        Number(r.balValue || 0)
+        { v: Number((Number(r.balValue) || 0).toFixed(2)), t: 'n', z: '0.00' }
       ]);
 
       const totalOpQty = allData.reduce((s, r) => s + (Number(r.opBalance) || 0), 0);
@@ -571,7 +573,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
         doc.text('G- 5/6/21/20A, Mayur Tower, Nehru Bazar, Jaipur - 302003 | Ph: 0141-2314253', tx, 18);
 
         doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(50, 50, 50);
-        doc.text(`Branch Customer Wise Sales Report  |  Period: ${displayPeriod}`, tx, 23);
+        doc.text(` Customer Wise Sales Report  |  Period: ${displayPeriod}`, tx, 23);
 
         doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(70, 70, 130);
         doc.text(`Company / Division: ${displayCompany}`, tx, 28);
@@ -716,7 +718,7 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
         doc.setPage(i);
         if (i > 1) {
           doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(130, 130, 130);
-          doc.text(`Branch Customer Wise Sales Report - ${displayCompany} (${displayPeriod})`, 12, 10);
+          doc.text(` Customer Wise Sales Report - ${displayCompany} (${displayPeriod})`, 12, 10);
           doc.setDrawColor(220, 220, 230);
           doc.setLineWidth(0.3);
           doc.line(12, 12, pageW - 12, 12);
@@ -940,19 +942,19 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
                          <td style={{ color: 'var(--text-white)' }}>Total (Qty)</td>
                          <td></td><td></td><td></td>
                          <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                           {ssData.reduce((s, i) => s + (Number(i.opBalance) || 0), 0)}
+                           {ssGrandTotals ? (ssGrandTotals.totalOpQty ?? 0) : ssData.reduce((s, i) => s + (Number(i.opBalance) || 0), 0)}
                          </td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                          <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                           {ssData.reduce((s, i) => s + (Number(i.purQty) || 0) + (Number(i.purSchQty) || 0), 0)}
+                           {ssGrandTotals ? ((Number(ssGrandTotals.totalPurQty) || 0) + (Number(ssGrandTotals.totalPurSchQty) || 0)) : ssData.reduce((s, i) => s + (Number(i.purQty) || 0) + (Number(i.purSchQty) || 0), 0)}
                          </td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                          <td style={{ textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
-                           {ssData.reduce((s, i) => s + (Number(i.saleQty) || 0), 0)}
+                           {ssGrandTotals ? (ssGrandTotals.totalSaleQty ?? 0) : ssData.reduce((s, i) => s + (Number(i.saleQty) || 0), 0)}
                          </td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                          <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
-                           {ssData.reduce((s, i) => s + (Number(i.balQty) || 0), 0)}
+                           {ssGrandTotals ? (ssGrandTotals.totalBalQty ?? 0) : ssData.reduce((s, i) => s + (Number(i.balQty) || 0), 0)}
                          </td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                        </tr>
@@ -961,19 +963,19 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
                          <td></td><td></td><td></td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                          <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.opValue) || 0), 0).toFixed(2)}
+                           {'\u20b9'}{(ssGrandTotals ? Number(ssGrandTotals.totalOpVal || 0) : ssData.reduce((s, i) => s + (Number(i.opValue) || 0), 0)).toFixed(2)}
                          </td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                          <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>
-                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.purValue) || 0), 0).toFixed(2)}
+                           {'\u20b9'}{(ssGrandTotals ? Number(ssGrandTotals.totalPurVal || 0) : ssData.reduce((s, i) => s + (Number(i.purValue) || 0), 0)).toFixed(2)}
                          </td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                          <td style={{ textAlign: 'right', fontWeight: 700, color: '#10b981' }}>
-                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.saleValue) || 0), 0).toFixed(2)}
+                           {'\u20b9'}{(ssGrandTotals ? Number(ssGrandTotals.totalSaleVal || 0) : ssData.reduce((s, i) => s + (Number(i.saleValue) || 0), 0)).toFixed(2)}
                          </td>
                          <td style={{ textAlign: 'right', color: 'var(--text-muted)' }}>-</td>
                          <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--accent)' }}>
-                           {'\u20b9'}{ssData.reduce((s, i) => s + (Number(i.balValue) || 0), 0).toFixed(2)}
+                           {'\u20b9'}{(ssGrandTotals ? Number(ssGrandTotals.totalBalVal || 0) : ssData.reduce((s, i) => s + (Number(i.balValue) || 0), 0)).toFixed(2)}
                          </td>
                        </tr>
                      </tfoot>

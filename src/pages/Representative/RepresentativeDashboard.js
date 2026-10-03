@@ -473,6 +473,7 @@ const RepresentativeStatement = () => {
   const [reportEndDate, setReportEndDate] = useState('');
   const [historicalMonths, setHistoricalMonths] = useState([]);
   const [selectedStatementPeriod, setSelectedStatementPeriod] = useState('');
+  const [grandTotals, setGrandTotals] = useState(null);
 
   useEffect(() => {
     const loadPeriods = async () => {
@@ -515,6 +516,7 @@ const RepresentativeStatement = () => {
       setPage(res.data.page);
       setTotalPages(res.data.totalPages);
       setTotalCount(res.data.totalCount);
+      setGrandTotals(res.data.grandTotals || null);
       if (res.data.manufacturers) {
         setManufacturers(res.data.manufacturers || []);
       }
@@ -1118,28 +1120,30 @@ const RepresentativeStatement = () => {
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>{item.balValue?.toFixed(2) || '0.00'}</td>
                     </tr>
                   ))}
-                  <tr style={{ background: 'rgba(99,102,241,0.10)', fontWeight: 700, borderTop: '2px solid var(--border)', fontSize: '12px' }}>
-                    <td style={{ color: 'var(--text-white)' }}>Total</td>
-                    <td></td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.opBalance||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.opValue||0),0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.purQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.purValue||0),0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.purSchQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.saleQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.saleValue||0),0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.freeQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.brQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.brValue||0),0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.crQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.crValue||0),0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.dbQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.dbValue||0),0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.adjQty||0),0)}</td>
-                    <td style={{ textAlign: 'right' }}>{statement.reduce((s,i)=>s+(i.adjValue||0),0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--accent)' }}>{statement.reduce((s,i)=>s+(i.balQty||0),0)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--accent)' }}>{statement.reduce((s,i)=>s+(i.balValue||0),0).toFixed(2)}</td>
-                  </tr>
+                  {page >= totalPages && (
+                    <tr style={{ background: 'rgba(99,102,241,0.10)', fontWeight: 700, borderTop: '2px solid var(--border)', fontSize: '12px' }}>
+                      <td style={{ color: 'var(--text-white)' }}>Total</td>
+                      <td></td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalOpQty ?? 0) : statement.reduce((s,i)=>s+(i.opBalance||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{(grandTotals ? Number(grandTotals.totalOpVal || 0) : statement.reduce((s,i)=>s+(i.opValue||0),0)).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalPurQty ?? 0) : statement.reduce((s,i)=>s+(i.purQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{(grandTotals ? Number(grandTotals.totalPurVal || 0) : statement.reduce((s,i)=>s+(i.purValue||0),0)).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalPurSchQty ?? 0) : statement.reduce((s,i)=>s+(i.purSchQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalSaleQty ?? 0) : statement.reduce((s,i)=>s+(i.saleQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{(grandTotals ? Number(grandTotals.totalSaleVal || 0) : statement.reduce((s,i)=>s+(i.saleValue||0),0)).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalFreeQty ?? 0) : statement.reduce((s,i)=>s+(i.freeQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalBrQty ?? 0) : statement.reduce((s,i)=>s+(i.brQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{(grandTotals ? Number(grandTotals.totalBrVal || 0) : statement.reduce((s,i)=>s+(i.brValue||0),0)).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalCrQty ?? 0) : statement.reduce((s,i)=>s+(i.crQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{(grandTotals ? Number(grandTotals.totalCrVal || 0) : statement.reduce((s,i)=>s+(i.crValue||0),0)).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalDbQty ?? 0) : statement.reduce((s,i)=>s+(i.dbQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{(grandTotals ? Number(grandTotals.totalDbVal || 0) : statement.reduce((s,i)=>s+(i.dbValue||0),0)).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalAdjQty ?? 0) : statement.reduce((s,i)=>s+(i.adjQty||0),0)}</td>
+                      <td style={{ textAlign: 'right' }}>{(grandTotals ? Number(grandTotals.totalAdjVal || 0) : statement.reduce((s,i)=>s+(i.adjValue||0),0)).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--accent)' }}>{grandTotals ? (grandTotals.totalBalQty ?? 0) : statement.reduce((s,i)=>s+(i.balQty||0),0)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--accent)' }}>{(grandTotals ? Number(grandTotals.totalBalVal || 0) : statement.reduce((s,i)=>s+(i.balValue||0),0)).toFixed(2)}</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2192,6 +2196,7 @@ const SsSummary = () => {
   const [reportEndDate, setReportEndDate] = useState('');
   const [historicalMonths, setHistoricalMonths] = useState([]);
   const [selectedStatementPeriod, setSelectedStatementPeriod] = useState('');
+  const [grandTotals, setGrandTotals] = useState(null);
 
   useEffect(() => {
     const loadPeriods = async () => {
@@ -2234,6 +2239,7 @@ const SsSummary = () => {
       setPage(res.data.page);
       setTotalPages(res.data.totalPages);
       setTotalCount(res.data.totalCount);
+      setGrandTotals(res.data.grandTotals || null);
       if (res.data.manufacturers) {
         setManufacturers(res.data.manufacturers || []);
       }
@@ -2703,24 +2709,28 @@ const SsSummary = () => {
                       </tr>
                     );
                   })}
-                  <tr style={{ background: 'rgba(99, 102, 241, 0.08)', fontWeight: 700, borderTop: '2px solid var(--border)' }}>
-                    <td style={{ color: 'var(--text-white)' }}>Total (Qty)</td>
-                    <td></td>
-                    <td style={{ textAlign: 'right' }}>{pageOpQty}</td>
-                    <td style={{ textAlign: 'right' }}>{pagePurQty}</td>
-                    <td style={{ textAlign: 'right' }}>{pageTotalQty}</td>
-                    <td style={{ textAlign: 'right' }}>{pageSaleQty}</td>
-                    <td style={{ textAlign: 'right' }}>{pageBalaQty}</td>
-                  </tr>
-                  <tr style={{ fontWeight: 600, borderTop: '1px solid var(--border)', fontSize: '12px' }}>
-                    <td style={{ color: 'var(--text-muted)' }}>Total (Val)</td>
-                    <td></td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{pageOpValue.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{pagePurValue.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-white)', fontWeight: 700 }}>{(pageOpValue + pagePurValue).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{pageSaleValue.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{pageClosingValue.toFixed(2)}</td>
-                  </tr>
+                  {page >= totalPages && (
+                    <>
+                      <tr style={{ background: 'rgba(99, 102, 241, 0.08)', fontWeight: 700, borderTop: '2px solid var(--border)' }}>
+                        <td style={{ color: 'var(--text-white)' }}>Total (Qty)</td>
+                        <td></td>
+                        <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalOpQty ?? 0) : pageOpQty}</td>
+                        <td style={{ textAlign: 'right' }}>{grandTotals ? ((Number(grandTotals.totalPurQty) || 0) + (Number(grandTotals.totalPurSchQty) || 0)) : pagePurQty}</td>
+                        <td style={{ textAlign: 'right' }}>{grandTotals ? ((Number(grandTotals.totalOpQty) || 0) + (Number(grandTotals.totalPurQty) || 0) + (Number(grandTotals.totalPurSchQty) || 0)) : pageTotalQty}</td>
+                        <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalSaleQty ?? 0) : pageSaleQty}</td>
+                        <td style={{ textAlign: 'right' }}>{grandTotals ? (grandTotals.totalBalQty ?? 0) : pageBalaQty}</td>
+                      </tr>
+                      <tr style={{ fontWeight: 600, borderTop: '1px solid var(--border)', fontSize: '12px' }}>
+                        <td style={{ color: 'var(--text-muted)' }}>Total (Val)</td>
+                        <td></td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{(grandTotals ? Number(grandTotals.totalOpVal || 0) : pageOpValue).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{(grandTotals ? Number(grandTotals.totalPurVal || 0) : pagePurValue).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-white)', fontWeight: 700 }}>{(grandTotals ? (Number(grandTotals.totalOpVal || 0) + Number(grandTotals.totalPurVal || 0)) : (pageOpValue + pagePurValue)).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{(grandTotals ? Number(grandTotals.totalSaleVal || 0) : pageSaleValue).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{(grandTotals ? Number(grandTotals.totalBalVal || 0) : pageClosingValue).toFixed(2)}</td>
+                      </tr>
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -3135,6 +3145,8 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalExcessQty, setTotalExcessQty] = useState(0);
+  const [totalExcessValue, setTotalExcessValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [selectedMfac, setSelectedMfac] = useState('');
@@ -3162,6 +3174,8 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
       setData(res.data.data || []);
       setPage(res.data.page || 1);
       setTotalPages(res.data.totalPages || 1);
+      setTotalExcessQty(res.data.totalExcessQty || 0);
+      setTotalExcessValue(res.data.totalExcessValue || 0);
       setPeriodDisplay(res.data.periodDisplay || '');
       setReportMonth(res.data.reportMonth || '');
       setReportYear(res.data.reportYear || '');
@@ -3207,20 +3221,24 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
         [` Non-Moving / Excess Stock Report (Period: ${periodDisplay})`],
         [` Company: ${mfacLabel}`],
         [],
-        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Excess / Non-Moving Qty', 'Company']
+        ['Item Name', 'Pack', 'Op. Qty', 'Pur. Qty (3 Mon)', 'Total Qty (Op+Pur)', 'Total Sale Qty (3 Mon)', 'Bal. Qty (Total-Sale)', 'Excess / Non-Moving Qty', 'Rate', 'Excess Value', 'Company']
       ];
 
       const dataRows = allData.map(item => {
         const totQ = (Number(item.opBalance) || 0) + (Number(item.purQty) || 0);
+        const rate = Number(item.saleRate) || 0;
+        const excessVal = Number(item.excessValue) || ((Number(item.excessQty) || 0) * rate);
         return [
           item.itemName || '',
           item.pack || '',
-          item.opBalance || 0,
-          item.purQty || 0,
+          Number(item.opBalance) || 0,
+          Number(item.purQty) || 0,
           totQ,
-          item.saleQty || 0,
-          item.balQty || 0,
+          Number(item.saleQty) || 0,
+          Number(item.balQty) || 0,
           item.excessQty > 0 ? item.excessQty : '-',
+          { v: Number(rate.toFixed(2)), t: 'n', z: '0.00' },
+          { v: Number(excessVal.toFixed(2)), t: 'n', z: '0.00' },
           item.mfacName || ''
         ];
       });
@@ -3230,16 +3248,20 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
       const totalTot = totalOp + totalPur;
       const totalSale = allData.reduce((s, i) => s + (Number(i.saleQty) || 0), 0);
       const totalBal = allData.reduce((s, i) => s + (Number(i.balQty) || 0), 0);
-      const totalExcess = allData.reduce((s, i) => s + (Number(i.excessQty) || 0), 0);
+      const totalExcess = res.data.totalExcessQty || allData.reduce((s, i) => s + (Number(i.excessQty) || 0), 0);
+      const totalExcessVal = res.data.totalExcessValue || allData.reduce((s, i) => s + (Number(i.excessValue) || ((Number(i.excessQty) || 0) * (Number(i.saleRate) || 0))), 0);
 
-      const totalRow = ['Total', '', totalOp, totalPur, totalTot, totalSale, totalBal, totalExcess, ''];
+      const totalRow = [
+        'Total', '', totalOp, totalPur, totalTot, totalSale, totalBal, totalExcess, '',
+        { v: Number(totalExcessVal.toFixed(2)), t: 'n', z: '0.00' }, ''
+      ];
 
       const wb = XLSX.utils.book_new();
       const wsData = [...headerRows, ...dataRows, [], totalRow];
       const ws = XLSX.utils.aoa_to_sheet(wsData);
 
       ws['!cols'] = [
-        { wch: 32 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 22 }, { wch: 20 }, { wch: 24 }, { wch: 24 }
+        { wch: 32 }, { wch: 12 }, { wch: 12 }, { wch: 16 }, { wch: 18 }, { wch: 22 }, { wch: 20 }, { wch: 24 }, { wch: 14 }, { wch: 18 }, { wch: 24 }
       ];
 
       XLSX.utils.book_append_sheet(wb, ws, 'Non-Moving Stock');
@@ -3306,7 +3328,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
               onChange={(e) => setSelectedMfac(e.target.value)}
               style={{ flex: '0 1 220px' }}
             >
-              <option value="">{manufacturers.length === 1 ? manufacturers[0].name : (data[0]?.mfacName || user?.name || 'All Companies')}</option>
+              <option value="">{manufacturers.length === 1 ? manufacturers[0].name : (user?.name || data[0]?.mfacName || 'All Companies')}</option>
               {manufacturers.map(m => (
                 <option key={m.code} value={m.code}>{m.name}</option>
               ))}
@@ -3323,7 +3345,7 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
         ) : (
           <>
             <div className="table-container" style={{ overflowX: 'auto' }}>
-              <table className="table scrollable" style={{ width: '100%', minWidth: '1050px' }}>
+              <table className="table scrollable" style={{ width: '100%', minWidth: '1150px' }}>
                 <thead>
                   <tr>
                     <th>Item Name</th>
@@ -3334,12 +3356,14 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                     <th style={{ textAlign: 'right' }}>Total Sale Qty (3 Mon)</th>
                     <th style={{ textAlign: 'right', fontWeight: 700 }}>Bal. Qty (Total - Sale)</th>
                     <th style={{ textAlign: 'right', color: '#f59e0b' }}>Excess / Non-Moving Qty</th>
+                    <th style={{ textAlign: 'right', color: '#10b981' }}>Excess Value</th>
                     {isAdmin && <th>Company</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {data.filter(item => (Number(item.excessQty) || 0) > 0).map((item, idx) => {
                     const totQ = (Number(item.opBalance) || 0) + (Number(item.purQty) || 0);
+                    const excessVal = Number(item.excessValue) || ((Number(item.excessQty) || 0) * (Number(item.saleRate) || 0));
                     return (
                       <tr key={item._id || idx}>
                         <td style={{ color: 'var(--text-white)', fontWeight: 500 }}>{item.itemName || '—'}</td>
@@ -3358,6 +3382,9 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                             <span style={{ color: 'var(--text-muted)' }}>—</span>
                           )}
                         </td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: '#10b981' }}>
+                          ₹{excessVal.toFixed(2)}
+                        </td>
                         {isAdmin && <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.mfacName || '—'}</td>}
                       </tr>
                     );
@@ -3365,10 +3392,13 @@ const NonMovingStockReport = ({ isAdmin = false }) => {
                 </tbody>
                 <tfoot>
                   <tr style={{ background: 'rgba(245, 158, 11, 0.08)', fontWeight: 700, borderTop: '2px solid var(--border)', fontSize: '13px' }}>
-                    <td style={{ color: 'var(--text-white)' }}>Total Excess Qty</td>
+                    <td style={{ color: 'var(--text-white)' }}>Total</td>
                     <td></td><td></td><td></td><td></td><td></td><td></td>
                     <td style={{ textAlign: 'right', color: '#f59e0b', fontWeight: 800, fontSize: '14px' }}>
-                      {data.filter(item => (Number(item.excessQty) || 0) > 0).reduce((s, i) => s + (Number(i.excessQty) || 0), 0)}
+                      {totalExcessQty || data.filter(item => (Number(item.excessQty) || 0) > 0).reduce((s, i) => s + (Number(i.excessQty) || 0), 0)}
+                    </td>
+                    <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 800, fontSize: '14px' }}>
+                      ₹{(totalExcessValue || data.filter(item => (Number(item.excessQty) || 0) > 0).reduce((s, i) => s + (Number(i.excessValue) || 0), 0)).toFixed(2)}
                     </td>
                     {isAdmin && <td></td>}
                   </tr>
