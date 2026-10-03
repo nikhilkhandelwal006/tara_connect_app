@@ -1482,6 +1482,180 @@ const CustomerWiseReport = () => {
     }
   };
 
+  const handleDownloadCwPdf = async () => {
+    if (!checkDownloadLimit(user, 'cw_pdf', 'Customer Wise PDF')) return;
+    let success = false;
+    try {
+      setDownloading(true);
+      setDownloadSuccess(false);
+
+      let histMonth = '', histYear = '', isHist = false;
+      if (selectedStatementPeriod) {
+        const parts = selectedStatementPeriod.split('|');
+        histMonth = parts[0] || '';
+        histYear = parts[1] || '';
+        isHist = parts[2] === 'true';
+      }
+
+      const res = await representativesAPI.getCustomerWiseAll({
+        mfacCodeFilter: selectedMfac,
+        isHistorical: isHist ? 'true' : 'false',
+        reportMonth: histMonth,
+        reportYear: histYear,
+        downloadType: 'cw_pdf'
+      });
+
+      const allData = res.data.data || [];
+      if (allData.length === 0) { toast.warning('No data to download'); return; }
+
+      const companyName = res.data.companyName || selectedMfac || '';
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const rMonth = histMonth || res.data.reportMonth || '';
+      const rYear = histYear || res.data.reportYear || '';
+
+      // Group data by customer
+      const customerMap = new Map();
+      allData.forEach(item => {
+        const key = item.customerCode || item.customerName || 'Unknown';
+        if (!customerMap.has(key)) {
+          customerMap.set(key, {
+            customerCode: item.customerCode || '',
+            customerName: item.customerName || '',
+            customerAddress: item.customerAddress || '',
+            customerCity: item.customerCity || '',
+            items: []
+          });
+        }
+        customerMap.get(key).items.push(item);
+      });
+
+      const img = await loadImage('/a.png');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const totalPagesExp = '{total_pages_count_string}';
+      const pageW = doc.internal.pageSize.width;
+      const pageH = doc.internal.pageSize.height;
+
+      const drawHeader = () => {
+        const logoW = 14;
+        const logoH = img ? (img.height / img.width) * logoW : 0;
+        if (img) doc.addImage(img, 'PNG', 14, 8, logoW, logoH);
+        const tx = img ? 14 + logoW + 3 : 14;
+        doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 80);
+        doc.text('Tara Medicos Pvt Ltd, Jaipur', tx, 14);
+        doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
+        doc.text('Shop No. 15, Chandpole Bazar, Jaipur - 302001 | Ph: 0141-2318580', tx, 19);
+        doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(50, 50, 50);
+        doc.text(`Customer Wise Sales Report  |  Period: ${rMonth} ${rYear}`, tx, 24);
+        if (companyName) doc.text(`Company / Division: ${companyName}`, tx, 29);
+        doc.setTextColor(180, 180, 180);
+        doc.text(`Date: ${dateStr}`, pageW - 14, 14, { align: 'right' });
+        doc.setDrawColor(99, 102, 241);
+        doc.setLineWidth(0.5);
+        doc.line(14, 32, pageW - 14, 32);
+        doc.setTextColor(0, 0, 0);
+      };
+
+      drawHeader();
+      let curY = 36;
+      const customers = Array.from(customerMap.values());
+
+      customers.forEach((cust, ci) => {
+        if (curY > pageH - 40) {
+          doc.addPage();
+          drawHeader();
+          curY = 36;
+        }
+
+        doc.setFillColor(237, 237, 255);
+        doc.roundedRect(14, curY, pageW - 28, 10, 2, 2, 'F');
+        doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 100);
+        doc.text(`${ci + 1}. ${cust.customerName}`, 17, curY + 7);
+        if (cust.customerCode) {
+          doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 160);
+          doc.text(`Code: ${cust.customerCode}`, pageW - 16, curY + 7, { align: 'right' });
+        }
+        curY += 12;
+
+        if (cust.customerAddress || cust.customerCity) {
+          doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
+          const addrLine = [cust.customerAddress, cust.customerCity].filter(Boolean).join(', ');
+          doc.text(`Addr: ${addrLine}`, 17, curY);
+          curY += 5;
+        }
+
+        const tableHead = [['#', 'Item Name', 'Pack', 'Qty', 'Sch.Qty', 'Rate', 'Amount']];
+        const tableBody = cust.items.map((item, idx) => {
+          const amount = (Number(item.qty) || 0) * (Number(item.saleRate) || 0);
+          return [
+            idx + 1,
+            item.itemName || '-',
+            item.packName || '',
+            Math.round(Number(item.qty) || 0),
+            Math.round(Number(item.schemeQty) || 0),
+            Number(item.saleRate || 0).toFixed(2),
+            amount.toFixed(2)
+          ];
+        });
+
+        const totalQty = cust.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+        const totalSchQty = cust.items.reduce((s, i) => s + (Number(i.schemeQty) || 0), 0);
+        const totalAmt = cust.items.reduce((s, i) => s + ((Number(i.qty) || 0) * (Number(i.saleRate) || 0)), 0);
+
+        autoTable(doc, {
+          startY: curY,
+          head: tableHead,
+          body: tableBody,
+          foot: [['', 'Total', '', Math.round(totalQty), Math.round(totalSchQty), '', totalAmt.toFixed(2)]],
+          margin: { left: 14, right: 14 },
+          styles: { fontSize: 7.8, cellPadding: 2, valign: 'middle', overflow: 'linebreak' },
+          headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          footStyles: { fillColor: [220, 225, 255], textColor: [30, 30, 100], fontStyle: 'bold', fontSize: 8 },
+          columnStyles: {
+            0: { cellWidth: 7, halign: 'center' },
+            1: { cellWidth: 'auto', halign: 'left' },
+            2: { cellWidth: 18, halign: 'center' },
+            3: { cellWidth: 14, halign: 'right' },
+            4: { cellWidth: 16, halign: 'right' },
+            5: { cellWidth: 18, halign: 'right' },
+            6: { cellWidth: 22, halign: 'right' }
+          },
+          didParseCell: (data) => {
+            if (data.section === 'foot' && data.column.index === 6) {
+              data.cell.styles.textColor = [20, 100, 20];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          },
+          didDrawPage: (data) => {
+            if (data.pageNumber > 1) drawHeader();
+            doc.setFontSize(7.5); doc.setTextColor(160, 160, 160);
+            doc.text(`Page ${data.pageNumber} of ${totalPagesExp}`, pageW - 14, pageH - 7, { align: 'right' });
+            doc.text('Tara Medicos Pvt Ltd, Jaipur', 14, pageH - 7);
+          }
+        });
+
+        curY = doc.lastAutoTable.finalY + 6;
+        if (ci < customers.length - 1) {
+          doc.setDrawColor(220, 220, 220);
+          doc.setLineWidth(0.3);
+          doc.line(14, curY - 2, pageW - 14, curY - 2);
+        }
+      });
+
+      if (typeof doc.putTotalPages === 'function') doc.putTotalPages(totalPagesExp);
+      const divLabel = companyName || 'CW';
+      doc.save(`CW_CustomerWise_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${rMonth}_${rYear}.pdf`);
+      success = true;
+      setDownloadSuccess(true);
+      setTimeout(() => { setDownloading(false); setDownloadSuccess(false); }, 1500);
+    } catch (error) {
+      console.error('CW PDF error:', error);
+      toast.error('Failed to generate Customer Wise PDF');
+    } finally {
+      if (!success) setDownloading(false);
+    }
+  };
+
   return (
     <div className="animate-slide-up">
       <style>{`
@@ -1550,6 +1724,15 @@ const CustomerWiseReport = () => {
           >
             <FiDownload size={15} />
             {downloading ? 'Downloading...' : 'Download Excel'}
+          </button>
+          <button
+            className="btn btn-sm"
+            onClick={handleDownloadCwPdf}
+            disabled={downloading || loading}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+          >
+            <FiFileText size={15} />
+            {downloading ? 'Generating...' : 'Download PDF'}
           </button>
         </div>
       </div>

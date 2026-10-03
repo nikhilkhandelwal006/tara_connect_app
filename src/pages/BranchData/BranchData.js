@@ -1,8 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { representativesAPI } from '../../services/api';
 import { toast } from 'react-toastify';
-import { FiUploadCloud, FiDownload, FiSearch, FiX, FiChevronDown, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiUploadCloud, FiDownload, FiSearch, FiX, FiChevronDown, FiChevronLeft, FiChevronRight, FiFileText } from 'react-icons/fi';
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+const loadBranchImage = (url) => new Promise((resolve) => {
+  const img = new Image();
+  img.src = url;
+  img.onload = () => resolve(img);
+  img.onerror = () => resolve(null);
+});
 
 const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
   const canSs = isAdmin || userPermissions?.canViewBranchStatement;
@@ -482,6 +491,167 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
     }
   };
 
+  // Download Branch CW as grouped PDF (representative only)
+  const handleDownloadCwPdf = async () => {
+    try {
+      toast.info('Preparing Branch CW PDF...');
+      let reportMonth = '', reportYear = '', isHistorical = '';
+      if (cwSelectedPeriod) {
+        const parts = cwSelectedPeriod.split('|');
+        reportMonth = parts[0]; reportYear = parts[1]; isHistorical = parts[2];
+      }
+      const res = await representativesAPI.getBranchCustomerWiseAll({
+        mfacCodeFilter: cwSelectedMfac,
+        reportMonth, reportYear, isHistorical
+      });
+      const allData = res.data.data || [];
+      if (allData.length === 0) { toast.warn('No records to export'); return; }
+
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const companyName = cwSelectedMfac
+        ? (cwManufacturers.find(m => m.code === cwSelectedMfac)?.name || cwSelectedMfac)
+        : 'All Companies';
+
+      // Group data by customer code
+      const customerMap = new Map();
+      allData.forEach(item => {
+        const key = item.customerCode || item.customerName || 'Unknown';
+        if (!customerMap.has(key)) {
+          customerMap.set(key, {
+            customerCode: item.customerCode || '',
+            customerName: item.customerName || '',
+            customerAddress: item.customerAddress || '',
+            customerCity: item.customerCity || '',
+            items: []
+          });
+        }
+        customerMap.get(key).items.push(item);
+      });
+
+      const img = await loadBranchImage('/a.png');
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const totalPagesExp = '{total_pages_count_string}';
+      const pageW = doc.internal.pageSize.width;
+      const pageH = doc.internal.pageSize.height;
+
+      const drawHeader = () => {
+        const logoW = 14;
+        const logoH = img ? (img.height / img.width) * logoW : 0;
+        if (img) doc.addImage(img, 'PNG', 14, 8, logoW, logoH);
+        const tx = img ? 14 + logoW + 3 : 14;
+        doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 80);
+        doc.text('Tara Medicos Pvt Ltd, Jaipur (Branch)', tx, 14);
+        doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
+        doc.text('Shop No. 15, Chandpole Bazar, Jaipur - 302001 | Ph: 0141-2318580', tx, 19);
+        doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(50, 50, 50);
+        doc.text(`Branch Customer Wise Sales Report  |  Period: ${reportMonth} ${reportYear}`, tx, 24);
+        if (companyName) doc.text(`Company / Division: ${companyName}`, tx, 29);
+        doc.setTextColor(180, 180, 180);
+        doc.text(`Date: ${dateStr}`, pageW - 14, 14, { align: 'right' });
+        doc.setDrawColor(99, 102, 241);
+        doc.setLineWidth(0.5);
+        doc.line(14, 32, pageW - 14, 32);
+        doc.setTextColor(0, 0, 0);
+      };
+
+      drawHeader();
+      let curY = 36;
+      const customers = Array.from(customerMap.values());
+
+      customers.forEach((cust, ci) => {
+        if (curY > pageH - 40) {
+          doc.addPage();
+          drawHeader();
+          curY = 36;
+        }
+
+        // Customer section header bar
+        doc.setFillColor(237, 237, 255);
+        doc.roundedRect(14, curY, pageW - 28, 10, 2, 2, 'F');
+        doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 100);
+        doc.text(`${ci + 1}. ${cust.customerName}`, 17, curY + 7);
+        if (cust.customerCode) {
+          doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 160);
+          doc.text(`Code: ${cust.customerCode}`, pageW - 16, curY + 7, { align: 'right' });
+        }
+        curY += 12;
+
+        if (cust.customerAddress || cust.customerCity) {
+          doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
+          const addrLine = [cust.customerAddress, cust.customerCity].filter(Boolean).join(', ');
+          doc.text(`\u{1F4CD} ${addrLine}`, 17, curY);
+          curY += 5;
+        }
+
+        const tableHead = [['#', 'Item Name', 'Pack', 'Qty', 'Sch.Qty', 'Rate', 'Amount']];
+        const tableBody = cust.items.map((item, idx) => {
+          const amount = (Number(item.qty) || 0) * (Number(item.saleRate) || 0);
+          return [
+            idx + 1,
+            item.itemName || '-',
+            item.packName || item.pack || '',
+            Math.round(Number(item.qty) || 0),
+            Math.round(Number(item.schemeQty) || 0),
+            Number(item.saleRate || 0).toFixed(2),
+            amount.toFixed(2)
+          ];
+        });
+
+        const totalQty = cust.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+        const totalSchQty = cust.items.reduce((s, i) => s + (Number(i.schemeQty) || 0), 0);
+        const totalAmt = cust.items.reduce((s, i) => s + ((Number(i.qty) || 0) * (Number(i.saleRate) || 0)), 0);
+
+        autoTable(doc, {
+          startY: curY,
+          head: tableHead,
+          body: tableBody,
+          foot: [['', 'Total', '', Math.round(totalQty), Math.round(totalSchQty), '', totalAmt.toFixed(2)]],
+          margin: { left: 14, right: 14 },
+          styles: { fontSize: 7.8, cellPadding: 2, valign: 'middle', overflow: 'linebreak' },
+          headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          footStyles: { fillColor: [220, 225, 255], textColor: [30, 30, 100], fontStyle: 'bold', fontSize: 8 },
+          columnStyles: {
+            0: { cellWidth: 7, halign: 'center' },
+            1: { cellWidth: 'auto', halign: 'left' },
+            2: { cellWidth: 18, halign: 'center' },
+            3: { cellWidth: 14, halign: 'right' },
+            4: { cellWidth: 16, halign: 'right' },
+            5: { cellWidth: 18, halign: 'right' },
+            6: { cellWidth: 22, halign: 'right' }
+          },
+          didParseCell: (data) => {
+            if (data.section === 'foot' && data.column.index === 6) {
+              data.cell.styles.textColor = [20, 100, 20];
+              data.cell.styles.fontStyle = 'bold';
+            }
+          },
+          didDrawPage: (data) => {
+            if (data.pageNumber > 1) drawHeader();
+            doc.setFontSize(7.5); doc.setTextColor(160, 160, 160);
+            doc.text(`Page ${data.pageNumber} of ${totalPagesExp}`, pageW - 14, pageH - 7, { align: 'right' });
+            doc.text('Tara Medicos Pvt Ltd, Jaipur (Branch)', 14, pageH - 7);
+          }
+        });
+
+        curY = doc.lastAutoTable.finalY + 6;
+        if (ci < customers.length - 1) {
+          doc.setDrawColor(220, 220, 220);
+          doc.setLineWidth(0.3);
+          doc.line(14, curY - 2, pageW - 14, curY - 2);
+        }
+      });
+
+      if (typeof doc.putTotalPages === 'function') doc.putTotalPages(totalPagesExp);
+      const divLabel = companyName || 'Branch_CW';
+      doc.save(`Branch_CW_${divLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${reportMonth}_${reportYear}.pdf`);
+      toast.success('Branch CW PDF downloaded!');
+    } catch (err) {
+      console.error('Branch CW PDF error:', err);
+      toast.error('Failed to generate Branch CW PDF');
+    }
+  };
+
   if (!canSs && !canCw) {
     return (
       <div className="animate-slide-up" style={{ padding: '40px', textAlign: 'center' }}>
@@ -803,9 +973,16 @@ const BranchData = ({ isAdmin = false, userPermissions = {} }) => {
               )}
             </div>
 
-            <button className="btn btn-outline btn-sm" onClick={handleDownloadCwExcel} disabled={cwData.length === 0} style={{ color: '#10b981', borderColor: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <FiDownload /> Export to Excel
-            </button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button className="btn btn-outline btn-sm" onClick={handleDownloadCwExcel} disabled={cwData.length === 0} style={{ color: '#10b981', borderColor: '#10b981', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <FiDownload /> Export to Excel
+              </button>
+              {!isAdmin && (
+                <button className="btn btn-sm" onClick={handleDownloadCwPdf} disabled={cwData.length === 0} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  <FiFileText size={14} /> Download PDF
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Table */}
