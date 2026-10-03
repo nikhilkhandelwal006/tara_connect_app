@@ -5183,29 +5183,6 @@ const AdminRepresentatives = () => {
                           </tr>
                         );
                       })}
-                      <tr style={{ background: 'rgba(99, 102, 241, 0.08)', fontWeight: 700, borderTop: '2px solid var(--border)' }}>
-                        <td style={{ color: 'var(--text-white)' }}>Total (Qty)</td>
-                        <td></td>
-                        <td></td>
-                        <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.opBalance) || 0), 0)}</td>
-                        <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.purQty) || 0) + (Number(i.purSchQty) || 0), 0)}</td>
-                        <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.opBalance) || 0) + (Number(i.purQty) || 0) + (Number(i.purSchQty) || 0), 0)}</td>
-                        <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.saleQty) || 0) + (Number(i.freeQty) || 0) + (Number(i.brQty) || 0) - (Number(i.crQty) || 0) + (Number(i.adjQty) || 0), 0)}</td>
-                        <td style={{ textAlign: 'right' }}>{summaryData.reduce((s, i) => s + (Number(i.balQty) || 0), 0)}</td>
-                        <td></td>
-                      </tr>
-                      <tr style={{ fontWeight: 600, borderTop: '1px solid var(--border)', fontSize: '12px' }}>
-                        <td style={{ color: 'var(--text-muted)' }}>Total (Val)</td>
-                        <td></td>
-                        <td></td>
-                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{summaryData.reduce((s, i) => s + (Number(i.opValue) || 0), 0).toFixed(2)}</td>
-                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{summaryData.reduce((s, i) => s + (Number(i.purValue) || 0), 0).toFixed(2)}</td>
-                        <td style={{ textAlign: 'right', color: 'var(--text-white)', fontWeight: 700 }}>{(summaryData.reduce((s, i) => s + (Number(i.opValue) || 0), 0) + summaryData.reduce((s, i) => s + (Number(i.purValue) || 0), 0)).toFixed(2)}</td>
-                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{summaryData.reduce((s, i) => s + (Number(i.saleValue) || 0) + (Number(i.brValue) || 0) - (Number(i.crValue) || 0) + (Number(i.adjValue) || 0), 0).toFixed(2)}</td>
-                        <td style={{ textAlign: 'right', color: 'var(--text-white)' }}>{summaryData.reduce((s, i) => s + (Number(i.balValue) || 0), 0).toFixed(2)}</td>
-                        <td></td>
-                        <td></td>
-                      </tr>
                     </tbody>
                   </table>
                 </div>
