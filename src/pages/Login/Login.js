@@ -59,6 +59,17 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (!formData.email || !formData.email.trim()) {
+      toast.error('Please enter your mobile number or email');
+      return;
+    }
+    if (!formData.password || formData.password.length < 4) {
+      toast.error('Please enter your password');
+      return;
+    }
+
     setLoading(true);
 
     try {
