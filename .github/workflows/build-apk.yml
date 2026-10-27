@@ -56,12 +56,14 @@ jobs:
           cd android
           ./gradlew bundleRelease --no-daemon 2>&1
 
-      - name: Find AAB
-        run: find android -name "*.aab" 2>/dev/null || echo "AAB not found"
+      - name: Sign Release AAB
+        run: |
+          keytool -genkey -v -keystore android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          jarsigner -keystore android/debug.keystore -storepass android -keypass android android/app/build/outputs/bundle/release/app-release.aab androiddebugkey
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TaraConnect-App-AAB
+          name: TaraConnect-App-Signed-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
