@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android App Bundle
 
 on:
   push:
@@ -52,16 +52,16 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Build Release App Bundle
-  run: |
-    cd android
-    ./gradlew bundleRelease --no-daemon 2>&1
+        run: |
+          cd android
+          ./gradlew bundleRelease --no-daemon 2>&1
 
-  - name: Find AAB
-  run: find android -name "*.aab" 2>/dev/null || echo "AAB not found"
+      - name: Find AAB
+        run: find android -name "*.aab" 2>/dev/null || echo "AAB not found"
 
       - name: Upload AAB Artifact
-  uses: actions/upload-artifact@v4
-  with:
-    name: TaraConnect-App-AAB
-    path: android/app/build/outputs/bundle/release/app-release.aab
-    retention-days: 30
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaraConnect-App-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
