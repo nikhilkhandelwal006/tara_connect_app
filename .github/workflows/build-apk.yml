@@ -51,17 +51,17 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x android/gradlew
 
-      - name: Build Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug --no-daemon 2>&1
+      - name: Build Release App Bundle
+  run: |
+    cd android
+    ./gradlew bundleRelease --no-daemon 2>&1
 
-      - name: Find APK
-        run: find android -name "*.apk" 2>/dev/null || echo "APK not found"
+  - name: Find AAB
+  run: find android -name "*.aab" 2>/dev/null || echo "AAB not found"
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: TaraConnect-App-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+      - name: Upload AAB Artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: TaraConnect-App-AAB
+    path: android/app/build/outputs/bundle/release/app-release.aab
+    retention-days: 30
