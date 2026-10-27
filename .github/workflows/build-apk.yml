@@ -59,6 +59,15 @@ jobs:
           cd ..
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore android/release.keystore -storepass taraconnect123 -keypass taraconnect123 android/app/build/outputs/bundle/release/app-release.aab releasekey
 
+- name: Generate PEM Certificate for Play Console
+        run: |
+          keytool -export -rfc -keystore android/release.keystore -alias releasekey -file upload_certificate.pem -storepass taraconnect123
+
+      - name: Upload PEM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Upload-Certificate-PEM
+          path: upload_certificate.pem
       - name: Upload Release AAB Artifact
         uses: actions/upload-artifact@v4
         with:
