@@ -51,19 +51,17 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x android/gradlew
 
-      - name: Build Release App Bundle
+      - name: Generate Release Keystore and Sign AAB
         run: |
+          keytool -genkeypair -v -keystore android/release.keystore -alias releasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass taraconnect123 -keypass taraconnect123 -dname "CN=TaraConnect, OU=IT, O=TaraMedicos, L=Jaipur, ST=Rajasthan, C=IN"
           cd android
           ./gradlew bundleRelease --no-daemon 2>&1
+          cd ..
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore android/release.keystore -storepass taraconnect123 -keypass taraconnect123 android/app/build/outputs/bundle/release/app-release.aab releasekey
 
-      - name: Sign Release AAB
-        run: |
-          keytool -genkey -v -keystore android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          jarsigner -keystore android/debug.keystore -storepass android -keypass android android/app/build/outputs/bundle/release/app-release.aab androiddebugkey
-
-      - name: Upload AAB Artifact
+      - name: Upload Release AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TaraConnect-App-Signed-AAB
+          name: TaraConnect-App-Release-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
