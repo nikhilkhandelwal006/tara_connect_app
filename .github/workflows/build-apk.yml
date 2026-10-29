@@ -51,23 +51,17 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x android/gradlew
 
-      - name: Generate Release Keystore and Sign AAB
+      - name: Decode Keystore and Sign AAB
         run: |
-          keytool -genkeypair -v -keystore android/release.keystore -alias releasekey -keyalg RSA -keysize 2048 -validity 10000 -storepass taraconnect123 -keypass taraconnect123 -dname "CN=TaraConnect, OU=IT, O=TaraMedicos, L=Jaipur, ST=Rajasthan, C=IN"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
           cd android
-          ./gradlew bundleRelease --no-daemon 2>&1
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=release.keystore \
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}" \
+            --no-daemon 2>&1
           cd ..
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA256 -keystore android/release.keystore -storepass taraconnect123 -keypass taraconnect123 android/app/build/outputs/bundle/release/app-release.aab releasekey
-
-      - name: Generate PEM Certificate for Play Console
-        run: |
-          keytool -export -rfc -keystore android/release.keystore -alias releasekey -file upload_certificate.pem -storepass taraconnect123
-
-      - name: Upload PEM Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Upload-Certificate-PEM
-          path: upload_certificate.pem
 
       - name: Upload Release AAB Artifact
         uses: actions/upload-artifact@v4
