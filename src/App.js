@@ -10,12 +10,12 @@ import { App as CapApp } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import './index.css';
 
-// 👇 Yeh 4 lines change hui — lazy() se wrap kiya
+// Lazy load dashboards
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard'));
 const BuyerDashboard = lazy(() => import('./pages/Buyer/BuyerDashboard'));
 const RepresentativeDashboard = lazy(() => import('./pages/Representative/RepresentativeDashboard'));
 
-// Home redirect — bilkul same, kuch change nahi
+// Home redirect component
 const HomeRedirect = () => {
   const { user, loading } = useAuth();
 
@@ -47,7 +47,7 @@ const HomeRedirect = () => {
   }
 };
 
-// 👇 Suspense fallback — dashboard load hote time yeh dikhega
+// Suspense fallback loader
 const PageLoader = () => (
   <div style={{
     display: 'flex',
@@ -85,10 +85,9 @@ const CapacitorAppHandler = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <CapacitorAppHandler />
-        {/* 👇 Routes ko Suspense mein wrap kiya */}
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<HomeRedirect />} />
@@ -116,25 +115,25 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
-      </Router>
 
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        draggable
-        theme="dark"
-        toastStyle={{
-          background: '#1a1a2e',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '12px',
-          fontFamily: 'Inter, sans-serif'
-        }}
-      />
-    </AuthProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          draggable
+          theme="dark"
+          toastStyle={{
+            background: '#1a1a2e',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            fontFamily: 'Inter, sans-serif'
+          }}
+        />
+      </AuthProvider>
+    </Router>
   );
 }
 
