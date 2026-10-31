@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "in.taramed.app"
+    namespace "in.taramedicos.taraconnect"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "in.taramed.app"
+        applicationId "in.taramedicos.taraconnect"
      minSdkVersion 24
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
