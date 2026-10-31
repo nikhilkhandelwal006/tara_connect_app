@@ -1,4 +1,4 @@
-package in.taramed.app;
+﻿package in.taramedicos.taraconnect;
 
 import android.os.Bundle;
 import android.webkit.WebView;
