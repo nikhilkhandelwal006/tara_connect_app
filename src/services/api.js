@@ -158,6 +158,7 @@ export const representativesAPI = {
   uploadCustomerWiseChunk: (data) => api.post('/representatives/customer-wise/chunk', data),
   getCustomerWise: (params) => api.get('/representatives/customer-wise', { params }),
   getCustomerWiseAll: (params) => api.get('/representatives/customer-wise/download-all', { params }),
+  deleteCustomerWisePeriod: (data) => api.delete('/representatives/customer-wise/delete-period', { data }),
   toggleCustomerWisePermission: (id) => api.patch(`/representatives/toggle-customer-wise-permission/${id}`),
   togglePoPermission: (id) => api.patch(`/representatives/toggle-po-permission/${id}`),
   bulkPoPermission: (enable) => api.patch('/representatives/bulk-po-permission', { enable }),
@@ -198,6 +199,7 @@ export const representativesAPI = {
   getBranchCWPeriods: () => api.get('/representatives/branch-customer-wise/available-periods'),
   getBranchCustomerWise: (params) => api.get('/representatives/branch-customer-wise', { params }),
   getBranchCustomerWiseAll: (params) => api.get('/representatives/branch-customer-wise/download-all', { params }),
+  deleteBranchCustomerWisePeriod: (data) => api.delete('/representatives/branch-customer-wise/delete-period', { data }),
 };
 
 export default api;
